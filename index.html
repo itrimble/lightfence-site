@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lightfence: conquer the grid, claim the universe</title>
+  <meta name="description" content="Lightfence is a neon arcade game for iPhone, iPad and Apple TV. Cut lines, claim territory and take back ten living worlds across a 100-stage campaign, ten guardian fights and Endless mode." />
+  <link rel="canonical" href="https://lightfence.remnantsecurity.com/" />
+  <meta name="theme-color" content="#06030f" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-64.png" />
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Remnant Security" />
+  <meta property="og:url" content="https://lightfence.remnantsecurity.com/" />
+  <meta property="og:title" content="Lightfence: conquer the grid, claim the universe" />
+  <meta property="og:description" content="A neon arcade game of cutting lines and claiming ground, for iPhone, iPad and Apple TV. Ten sectors, ten guardians, a 100-stage campaign and Endless mode." />
+  <meta property="og:image" content="https://lightfence.remnantsecurity.com/img/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Lightfence key art: a glowing crystal over a neon grid between violet clouds." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Lightfence: conquer the grid, claim the universe" />
+  <meta name="twitter:description" content="A neon arcade game of cutting lines and claiming ground, for iPhone, iPad and Apple TV. Coming soon." />
+  <meta name="twitter:image" content="https://lightfence.remnantsecurity.com/img/og-image.jpg" />
+  <meta name="twitter:image:alt" content="Lightfence key art: a glowing crystal over a neon grid between violet clouds." />
+
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"VideoGame","name":"Lightfence",
+   "url":"https://lightfence.remnantsecurity.com/",
+   "image":"https://lightfence.remnantsecurity.com/img/og-image.jpg",
+   "description":"A neon arcade game: draw lines to claim territory across ten themed sectors, a 100-stage campaign with a guardian fight at the end of every sector, and Endless mode.",
+   "genre":["Arcade","Action"],"gamePlatform":["iPhone","iPad","Apple TV"],"operatingSystem":"iOS, iPadOS, tvOS",
+   "playMode":"SinglePlayer","publisher":{"@type":"Organization","name":"Remnant Security","url":"https://remnantsecurity.com/"}}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;600&family=Unbounded:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" type="image/avif" imagesrcset="img/hero-1440.avif 1440w, img/hero-2560.avif 2560w" imagesizes="100vw" media="(min-width: 700px)" />
+  <link rel="stylesheet" href="lightfence.css" />
+  <script>document.documentElement.classList.add('js')</script>
+  <script src="lightfence.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="topbar" aria-label="Lightfence">
+  <div class="wrap topbar-in">
+    <a class="brand" href="#top"><img src="img/favicon-64.png" alt="" width="28" height="28" /><span>Lightfence</span></a>
+    <ul class="navlinks">
+      <li><a href="#play">How it plays</a></li>
+      <li><a href="#sectors">Sectors</a></li>
+      <li><a href="#guardians">Guardians</a></li>
+      <li><a href="#progression">Progression</a></li>
+      <li><a href="#platforms">Platforms</a></li>
+    </ul>
+    <a class="btn btn-sm" href="#get">Coming soon</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <picture class="hero-art">
+    <source media="(max-width: 699px)" type="image/avif" srcset="img/hero-tall.avif" />
+    <source media="(max-width: 699px)" type="image/webp" srcset="img/hero-tall.webp" />
+    <source type="image/avif" srcset="img/hero-1440.avif 1440w, img/hero-2560.avif 2560w" sizes="100vw" />
+    <img src="img/hero-1440.webp" srcset="img/hero-1440.webp 1440w, img/hero-2560.webp 2560w" sizes="100vw"
+         alt="Lightfence logo: a glowing crystal above the word LIGHTFENCE, over a neon grid between violet clouds."
+         width="1440" height="447" fetchpriority="high" />
+  </picture>
+  <div class="wrap hero-copy">
+    <h1><span class="sr-only">Lightfence. </span>Conquer the grid.<br /><em>Claim the universe.</em></h1>
+    <p class="lede">A neon arcade game for iPhone, iPad and Apple TV. Cut lines of light across open ground, claim territory, and stay one move ahead of the Snarl, the living storm that hunts your line.</p>
+    <div class="cta-row">
+      <a class="btn" href="#get">Coming soon to the App Store</a>
+      <a class="btn btn-ghost" href="#reel">Watch gameplay</a>
+    </div>
+    <ul class="chips" aria-label="Platforms">
+      <li>iPhone</li><li>iPad</li><li>Apple TV 4K</li>
+    </ul>
+  </div>
+  <figure class="wrap reel clip" id="reel">
+    <div class="screen" style="--accent:#22e6ff">
+      <video muted loop playsinline preload="none" poster="img/reel-poster.webp" aria-label="Gameplay reel: a few seconds of each of the ten guardian fights">
+        <source data-src="media/reel.webm" type="video/webm" />
+        <source data-src="media/reel.mp4" type="video/mp4" />
+      </video>
+      <button class="vbtn" type="button" hidden>Pause</button>
+    </div>
+    <figcaption>Recorded in-game from the Apple TV version: a moment from each of the ten guardian fights.</figcaption>
+  </figure>
+</header>
+
+<main id="main">
+  <section class="stats wrap" aria-label="At a glance">
+    <dl>
+      <div><dt>Stages</dt><dd>100</dd></div>
+      <div><dt>Sectors</dt><dd>10</dd></div>
+      <div><dt>Guardian fights</dt><dd>10</dd></div>
+      <div><dt>Achievements</dt><dd>100</dd></div>
+      <div><dt>Endless</dt><dd>&infin;</dd></div>
+    </dl>
+  </section>
+
+  <section class="section wrap play" id="play" aria-labelledby="play-h">
+    <div class="play-copy">
+      <p class="eyebrow">How it plays</p>
+      <h2 id="play-h">Draw the line. Take the ground.</h2>
+      <p class="sub">Arcade rules, tuned for a modern screen. Every cut is a gamble against something that wants it broken.</p>
+      <ol class="steps">
+        <li><h3>Run the border</h3><p>Your marker runs the outer edge. Steer into open ground to start a line.</p></li>
+        <li><h3>Close the cut</h3><p>Reach the border again and you claim the side without the Snarl. No reversing, no crossing your own line, and a line left standing lights a fuse.</p></li>
+        <li><h3>Outrun the Snarl</h3><p>A storm of living energy that turns toward your open line and lurches without warning. A long cut is never a sure thing.</p></li>
+        <li><h3>Chain and charge</h3><p>Claims within six seconds chain a combo up to 4&times;. Close calls and claimed ground fill <b>Overdrive</b>: eight seconds of slowed enemies and double score.</p></li>
+      </ol>
+    </div>
+    <div class="board" aria-hidden="true">
+      <svg viewBox="0 0 320 400" class="board-svg">
+        <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="rgba(120,140,255,.18)" stroke-width="1"/></pattern>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <rect x="10" y="10" width="300" height="380" fill="url(#grid)" />
+        <polygon class="claim" points="10,10 170,10 170,170 90,170 90,250 10,250" />
+        <rect x="10" y="10" width="300" height="380" rx="2" fill="none" stroke="#22e6ff" stroke-width="3" filter="url(#glow)" />
+        <path class="cut" d="M170 10 V170 H90 V250 H10" fill="none" stroke="#fff36a" stroke-width="3" filter="url(#glow)" />
+        <circle class="marker" r="6" fill="#fff" filter="url(#glow)"><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.55;1" calcMode="linear" path="M170 10 V170 H90 V250 H10" /></circle>
+        <g class="snarl" filter="url(#glow)"><path d="M0 -18 L14 6 L-12 10 Z M-16 -6 L16 -2 L0 18 Z" fill="none" stroke="#ff3dd8" stroke-width="2.5"/></g>
+        <circle class="tracer" r="5" fill="#ffb02e" filter="url(#glow)"><animateMotion dur="9s" repeatCount="indefinite" path="M310 390 H10 V10 H310 Z" /></circle>
+      </svg>
+    </div>
+  </section>
+
+  <section class="sectors" id="sectors" aria-labelledby="sectors-h">
+    <div class="wrap sectors-head">
+      <p class="eyebrow">Ten sectors &middot; ten stages each</p>
+      <h2 id="sectors-h">Ten worlds the Snarl tore dark.</h2>
+      <p class="sub">Each sector runs ten stages that twist the rules and the arena: orb rushes, perimeter patrols, swarms, splits, rage chambers, a gauntlet. Then its guardian wakes.</p>
+    </div>
+    <nav class="rail" aria-label="Jump to a sector">
+      <ol>
+        <li><a href="#s1" style="--accent:#33f2ff"><span>01</span> Aqua Reef</a></li>
+        <li><a href="#s2" style="--accent:#59ff80"><span>02</span> Crystal Caverns</a></li>
+        <li><a href="#s3" style="--accent:#ff8026"><span>03</span> Magma Core</a></li>
+        <li><a href="#s4" style="--accent:#b3e6ff"><span>04</span> Ice Spires</a></li>
+        <li><a href="#s5" style="--accent:#ff33d9"><span>05</span> Neon City</a></li>
+        <li><a href="#s6" style="--accent:#bf66ff"><span>06</span> Void Horizon</a></li>
+        <li><a href="#s7" style="--accent:#40ffbf"><span>07</span> Chrono Rift</a></li>
+        <li><a href="#s8" style="--accent:#ff4de6"><span>08</span> Nebula Maelstrom</a></li>
+        <li><a href="#s9" style="--accent:#ffbf33"><span>09</span> Eclipse Citadel</a></li>
+        <li><a href="#s10" style="--accent:#9e99ff"><span>10</span> Grid Nexus</a></li>
+      </ol>
+    </nav>
+    <!-- One panel per sector. World lines: ShowcaseStore.worldLines; life: DESIGN.md "Living worlds". -->
+    <article class="sector" id="s1" style="--accent:#33f2ff;--world:url(img/world-aqua-reef.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 01</p><h3>Aqua Reef</h3><p class="line">A drowned reef of light, waiting for its fish to come home.</p><p class="guardian">Guardian <b>The Tidewarden</b></p><ul class="life"><li>Marine snow</li><li>Jellyfish</li><li>The whale</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-1-poster.webp" aria-label="Aqua Reef gameplay: the fight with The Tidewarden"><source data-src="media/sector-1.webm" type="video/webm" /><source data-src="media/sector-1.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s2" style="--accent:#59ff80;--world:url(img/world-crystal-caverns.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 02</p><h3>Crystal Caverns</h3><p class="line">Caverns of singing crystal, choked with static.</p><p class="guardian">Guardian <b>The Prism Warden</b></p><ul class="life"><li>Glowing spores</li><li>Crystals that ring on claims</li><li>Fireflies</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-2-poster.webp" aria-label="Crystal Caverns gameplay: the fight with The Prism Warden"><source data-src="media/sector-2.webm" type="video/webm" /><source data-src="media/sector-2.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s3" style="--accent:#ff8026;--world:url(img/world-magma-core.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 03</p><h3>Magma Core</h3><p class="line">The Grid&rsquo;s furnace, made the Snarl&rsquo;s forge.</p><p class="guardian">Guardian <b>The Forge Tyrant</b></p><ul class="life"><li>Embers and ash</li><li>Spark lanes</li><li>Lava plumes</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-3-poster.webp" aria-label="Magma Core gameplay: the fight with The Forge Tyrant"><source data-src="media/sector-3.webm" type="video/webm" /><source data-src="media/sector-3.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s4" style="--accent:#b3e6ff;--world:url(img/world-ice-spires.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 04</p><h3>Ice Spires</h3><p class="line">Towers of frozen light, silent for an age.</p><p class="guardian">Guardian <b>The Hoarfrost</b></p><ul class="life"><li>Snow at three depths</li><li>Aurora</li><li>Falling stars</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-4-poster.webp" aria-label="Ice Spires gameplay: the fight with The Hoarfrost"><source data-src="media/sector-4.webm" type="video/webm" /><source data-src="media/sector-4.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s5" style="--accent:#ff33d9;--world:url(img/world-neon-city.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 05</p><h3>Neon City</h3><p class="line">A skyline of dead signs in the rain, patrolled day and night.</p><p class="guardian">Guardian <b>The Neon Sovereign</b></p><ul class="life"><li>Rain and smog</li><li>Traffic and skyways</li><li>Searchlights</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-5-poster.webp" aria-label="Neon City gameplay: the fight with The Neon Sovereign"><source data-src="media/sector-5.webm" type="video/webm" /><source data-src="media/sector-5.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s6" style="--accent:#bf66ff;--world:url(img/world-void-horizon.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 06</p><h3>Void Horizon</h3><p class="line">Past the edge of every map, where the stars went out.</p><p class="guardian">Guardian <b>The Void Eye</b></p><ul class="life"><li>Drifting dust</li><li>A breathing nebula</li><li>Falling stars</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-6-poster.webp" aria-label="Void Horizon gameplay: the fight with The Void Eye"><source data-src="media/sector-6.webm" type="video/webm" /><source data-src="media/sector-6.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s7" style="--accent:#40ffbf;--world:url(img/world-chrono-rift.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 07</p><h3>Chrono Rift</h3><p class="line">Time runs here in loops and stutters.</p><p class="guardian">Guardian <b>The Chronophage</b></p><ul class="life"><li>Sand on the wind</li><li>Hour lights</li><li>Rift rays</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-7-poster.webp" aria-label="Chrono Rift gameplay: the fight with The Chronophage"><source data-src="media/sector-7.webm" type="video/webm" /><source data-src="media/sector-7.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s8" style="--accent:#ff4de6;--world:url(img/world-nebula-maelstrom.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 08</p><h3>Nebula Maelstrom</h3><p class="line">The storm where the Snarl was born.</p><p class="guardian">Guardian <b>The Maelstrom</b></p><ul class="life"><li>Wheeling gas clouds</li><li>Storm flashes</li><li>Newborn stars</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-8-poster.webp" aria-label="Nebula Maelstrom gameplay: the fight with The Maelstrom"><source data-src="media/sector-8.webm" type="video/webm" /><source data-src="media/sector-8.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s9" style="--accent:#ffbf33;--world:url(img/world-eclipse-citadel.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 09</p><h3>Eclipse Citadel</h3><p class="line">The Snarl&rsquo;s fortress under a held eclipse.</p><p class="guardian">Guardian <b>The Eclipse</b></p><ul class="life"><li>Bats and gold sparks</li><li>God rays</li><li>Fortress windows</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-9-poster.webp" aria-label="Eclipse Citadel gameplay: the fight with The Eclipse"><source data-src="media/sector-9.webm" type="video/webm" /><source data-src="media/sector-9.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+    <article class="sector" id="s10" style="--accent:#9e99ff;--world:url(img/world-grid-nexus.webp)">
+      <div class="sector-in wrap"><div class="sector-copy reveal"><p class="num">Sector 10</p><h3>Grid Nexus</h3><p class="line">The heart of the Grid. Take it back.</p><p class="guardian">Guardian <b>Snarl Prime</b></p><ul class="life"><li>Energy streaming to the core</li><li>A heartbeat</li><li>A crown of light</li></ul></div>
+      <figure class="clip"><div class="screen"><video muted loop playsinline preload="none" poster="img/sector-10-poster.webp" aria-label="Grid Nexus gameplay: the fight with Snarl Prime"><source data-src="media/sector-10.webm" type="video/webm" /><source data-src="media/sector-10.mp4" type="video/mp4" /></video><button class="vbtn" type="button" hidden>Pause</button></div></figure></div>
+    </article>
+  </section>
+
+  <section class="section wrap" id="guardians" aria-labelledby="guardians-h">
+    <p class="eyebrow">Guardian fights</p>
+    <h2 id="guardians-h">Fought, not just out-claimed.</h2>
+    <p class="sub">Stage ten of every sector is a boss. Every claim drains its health bar, and it fights in a rhythm you can learn.</p>
+    <ol class="rhythm">
+      <li><b>Idle</b><span>It drifts. Your window to cut.</span></li>
+      <li><b>Tell</b><span>It slows, a ring closes on it, and the attack is named.</span></li>
+      <li><b>Attack</b><span>Volley, Nova, Charge or Summon.</span></li>
+      <li class="hot"><b>Exposed</b><span>It recovers. Hits land for 1.5&times;.</span></li>
+    </ol>
+    <div class="g-grid">
+      <div class="g-card"><h3>Close cuts hit twice as hard</h3><p>Close your line within reach of a guardian for double damage. A big enough hit staggers it.</p></div>
+      <div class="g-card"><h3>Three phases</h3><p>At two-thirds and one-third health it shifts phase: a longer pattern, shorter tells, less time to breathe.</p></div>
+      <div class="g-card"><h3>Ten personalities</h3><p>The Forge Tyrant leads with charges, the Prism Warden with novas; later guardians mix all four attacks.</p></div>
+    </div>
+    <ul class="g-names" aria-label="The ten guardians">
+      <li style="--accent:#33f2ff">The Tidewarden</li><li style="--accent:#59ff80">The Prism Warden</li><li style="--accent:#ff8026">The Forge Tyrant</li><li style="--accent:#b3e6ff">The Hoarfrost</li><li style="--accent:#ff33d9">The Neon Sovereign</li><li style="--accent:#bf66ff">The Void Eye</li><li style="--accent:#40ffbf">The Chronophage</li><li style="--accent:#ff4de6">The Maelstrom</li><li style="--accent:#ffbf33">The Eclipse</li><li style="--accent:#9e99ff">Snarl Prime</li>
+    </ul>
+  </section>
+
+  <section class="section worlds" id="worlds" aria-labelledby="worlds-h">
+    <div class="wrap worlds-in">
+      <div>
+        <p class="eyebrow">Living worlds &middot; music</p>
+        <h2 id="worlds-h">Wherever you draw a line, the light comes back.</h2>
+        <p class="sub">A sector&rsquo;s ten stages are ten chapters of one restoration. The Snarl&rsquo;s veil thins with every claim; weather thickens, creatures return, lights come back one by one. The world remembers.</p>
+        <ul class="feature-list">
+          <li><b>Layered, painted worlds.</b> Haze, long lights, weather and life drift at their own depths around the board, leaning as you move.</li>
+          <li><b>A theme for every sector.</b> Every stage has its own song, and a sector&rsquo;s ten are variations on one theme that builds toward the guardian.</li>
+          <li><b>Music that answers you.</b> Drawing plucks notes in key, claims land stingers on the beat, and the arena ripples in time.</li>
+        </ul>
+      </div>
+      <div class="paintings" aria-hidden="true">
+        <picture><source type="image/avif" srcset="img/world-aqua-reef.avif" /><img src="img/world-aqua-reef.webp" alt="" loading="lazy" width="720" height="1280" /></picture>
+        <picture><source type="image/avif" srcset="img/world-neon-city.avif" /><img src="img/world-neon-city.webp" alt="" loading="lazy" width="720" height="1280" /></picture>
+        <picture><source type="image/avif" srcset="img/world-magma-core.avif" /><img src="img/world-magma-core.webp" alt="" loading="lazy" width="720" height="1280" /></picture>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap" id="progression" aria-labelledby="prog-h">
+    <p class="eyebrow">Progression</p>
+    <h2 id="prog-h">Grow stronger with every claim.</h2>
+    <div class="prog">
+      <div class="core">
+        <h3>The Light Core</h3>
+        <p>Claims and clears earn XP. Each Core level unlocks the next of ten permanent upgrades.</p>
+        <ol class="upgrades">
+          <li>Overclock<span>+1.5 speed</span></li><li>Amplitude<span>+25% stun</span></li><li>Long Reach<span>+40% orb reach</span></li><li>Aegis<span>Start with a shield</span></li><li>Jackpot<span>+15% score</span></li><li>Overcharge<span>+15% score</span></li><li>Phase Shift<span>Phase dash at start</span></li><li>Bulwark<span>A second shield</span></li><li>Chrono<span>+60% warp time</span></li><li>Vitality<span>+1 life</span></li>
+        </ol>
+      </div>
+      <div class="powers">
+        <h3>Five power-ups</h3>
+        <p>One on the board at a time, introduced one by one through the campaign.</p>
+        <ul class="pu">
+          <li><img src="img/power-shield.webp" alt="" width="56" height="56" loading="lazy" /><b>Shield</b><span>Absorbs a hit.</span></li>
+          <li><img src="img/power-time.webp" alt="" width="56" height="56" loading="lazy" /><b>Time Warp</b><span>Enemies at quarter speed.</span></li>
+          <li><img src="img/power-gravity.webp" alt="" width="56" height="56" loading="lazy" /><b>Black Hole</b><span>A 3-second stun that clears minis.</span></li>
+          <li><img src="img/power-repair.webp" alt="" width="56" height="56" loading="lazy" /><b>Repair</b><span>Wins back a life.</span></li>
+          <li><img src="img/power-phase.webp" alt="" width="56" height="56" loading="lazy" /><b>Phase Dash</b><span>Immune to cuts and bolts.</span></li>
+        </ul>
+      </div>
+      <div class="more">
+        <div><h3>100 achievements</h3><p>A collection to chase across the campaign and beyond.</p></div>
+        <div><h3>Endless mode</h3><p>Waves that climb forever. Your score and lives carry from wave to wave.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section platforms" id="platforms" aria-labelledby="plat-h">
+    <div class="wrap">
+      <p class="eyebrow">Platforms &amp; controllers</p>
+      <h2 id="plat-h">From your pocket to the big screen.</h2>
+      <div class="devices">
+        <div class="device"><picture><source type="image/avif" srcset="img/icon-512.avif" /><img src="img/icon-512.webp" alt="Lightfence app icon" width="120" height="120" loading="lazy" /></picture><h3>iPhone &amp; iPad</h3><p>Drag to steer, tap the pill or two-finger tap for Overdrive, with haptics. Or pair a controller.</p></div>
+        <div class="device tv"><picture><source type="image/avif" srcset="img/tv-icon.avif" /><img src="img/tv-icon.webp" alt="Lightfence Apple TV icon" width="200" height="120" loading="lazy" /></picture><h3>Apple TV 4K</h3><p>Renders at 4K and 60 fps. The board turns on its side to fill the screen, with the same rules and balance as the phone. Steer with the Siri Remote or a gamepad.</p></div>
+      </div>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Controls by controller">
+        <table class="controls">
+          <caption>Controls follow the pad in your hand</caption>
+          <thead><tr><th scope="col">Controller</th><th scope="col">Select</th><th scope="col">Back</th><th scope="col">Pause</th><th scope="col">Overdrive</th><th scope="col">Steer</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">PlayStation <small>DualSense, DualShock 4</small></th><td><kbd class="ps x" aria-label="Cross">&#x2715;</kbd></td><td><kbd class="ps o" aria-label="Circle">&#x25CB;</kbd></td><td><kbd>Options</kbd></td><td><kbd class="ps t" aria-label="Triangle">&#x25B3;</kbd></td><td><kbd>D-pad / L-stick</kbd></td></tr>
+            <tr><th scope="row">Xbox</th><td><kbd class="xa">A</kbd></td><td><kbd class="xb">B</kbd></td><td><kbd>Menu</kbd></td><td><kbd class="xy">Y</kbd></td><td><kbd>D-pad / L-stick</kbd></td></tr>
+            <tr><th scope="row">Nintendo <small>Switch Pro, Joy-Con</small></th><td><kbd>B</kbd></td><td><kbd>A</kbd></td><td><kbd>+</kbd></td><td><kbd>X</kbd></td><td><kbd>D-pad / L-stick</kbd></td></tr>
+            <tr><th scope="row">MFi and other pads</th><td><kbd>A</kbd></td><td><kbd>B</kbd></td><td><kbd>Menu</kbd></td><td><kbd>Y</kbd></td><td><kbd>D-pad / L-stick</kbd></td></tr>
+            <tr><th scope="row">Siri Remote</th><td><kbd>Click</kbd></td><td><kbd>Back</kbd></td><td><kbd>Play/Pause</kbd></td><td><kbd>Click</kbd></td><td><kbd>Swipe / click ring</kbd></td></tr>
+            <tr><th scope="row">Touch</th><td><kbd>Tap</kbd></td><td>&mdash;</td><td><kbd>Pause button</kbd></td><td><kbd>Two-finger tap</kbd></td><td><kbd>Drag</kbd></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap access" id="accessibility" aria-labelledby="a11y-h">
+    <p class="eyebrow">Accessibility</p>
+    <h2 id="a11y-h">Built so everyone can read the board.</h2>
+    <p class="sub">Eight colour-vision modes, covering red-green, blue-yellow and monochrome vision, remap the colours you must never confuse (border, trail, the Snarl, hazards, the Nexus) and add shape cues that need no colour at all.</p>
+    <figure class="cv">
+    <div class="cv-row">
+      <div class="cv-mode"><div class="sws"><span class="sw" style="background:#00ffff"></span><span class="sw" style="background:#ff00ff"></span><span class="sw" style="background:#ff4033"></span><span class="sw" style="background:#ffd91a"></span></div><b>Standard</b></div>
+      <div class="cv-mode"><div class="sws"><span class="sw" style="background:#339eff"></span><span class="sw" style="background:#ff8c00"></span><span class="sw" style="background:#ffe033"></span><span class="sw" style="background:#f2f2f2"></span></div><b>Red-green</b></div>
+      <div class="cv-mode"><div class="sws"><span class="sw" style="background:#00e6f2"></span><span class="sw" style="background:#ff4db3"></span><span class="sw" style="background:#ff3326"></span><span class="sw" style="background:#ffe666"></span></div><b>Blue-yellow</b></div>
+      <div class="cv-mode"><div class="sws"><span class="sw" style="background:#666666"></span><span class="sw" style="background:#ffffff"></span><span class="sw" style="background:#ffffeb"></span><span class="sw" style="background:#b3b3b3"></span></div><b>Monochrome</b></div>
+    </div>
+    <figcaption>Border, the Snarl, hazards and Nexus: the standard look and one mode from each family, in the game&rsquo;s own colours.</figcaption>
+  </figure>
+    <ul class="a11y-list">
+      <li><b>High contrast</b> dims the backdrop art behind the board.</li>
+      <li><b>Larger HUD</b> for easier reading at a glance.</li>
+      <li><b>Reduce motion</b> follows your system setting and stills the living worlds.</li>
+      <li><b>Reduced flashing</b> takes the flashes out of the arena&rsquo;s reactions.</li>
+      <li><b>Screen shake</b> and <b>haptics</b> can be switched off.</li>
+      <li><b>Game pace</b>: Standard, or Fast at 1.5&times; for a quicker challenge.</li>
+    </ul>
+  </section>
+
+  <section class="get" id="get" aria-labelledby="get-h">
+    <div class="wrap get-in">
+      <picture><source type="image/avif" srcset="img/icon-512.avif" /><img src="img/icon-512.webp" alt="" width="132" height="132" loading="lazy" /></picture>
+      <h2 id="get-h">Coming soon to the App Store and Apple TV.</h2>
+      <p class="sub">Lightfence for iPhone, iPad and Apple TV.</p>
+      <!-- TODO(store-link): replace this placeholder with the App Store URL and Apple's official
+           "Download on the App Store" badge once the listing is live. No link or badge until then. -->
+      <p class="placeholder" data-placeholder="app-store-link"><span class="btn btn-static">App Store link coming soon</span></p>
+      <p class="contact">Questions or press: <a href="mailto:iantrimble@remnantsecurity.com">iantrimble@remnantsecurity.com</a></p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-in">
+    <p>&copy; <span id="year">2026</span> Remnant Security</p>
+    <ul>
+      <li><a href="https://remnantsecurity.com/">remnantsecurity.com</a></li>
+      <li><a href="https://apps.remnantsecurity.com/">More apps</a></li>
+      <li><a href="mailto:iantrimble@remnantsecurity.com">Contact</a></li>
+    </ul>
+  </div>
+</footer>
+<script src="posthog.js" defer></script>
+</body>
+</html>
