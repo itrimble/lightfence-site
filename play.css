@@ -1,0 +1,42 @@
+/* The playable mini board (play.js). Sits in the How it plays section. */
+.mini { --mini-accent: #33f2ff; padding: 14px; position: relative; }
+.mini-hud { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; align-items: center; margin-bottom: 10px;
+  font: 600 0.72rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mini-sector { color: var(--mini-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-lives { color: var(--mini-accent); letter-spacing: 0.2em; }
+.mini-score { color: var(--ink); font-variant-numeric: tabular-nums; }
+.mini-meter { grid-column: 1 / 3; height: 6px; border-radius: 99px; background: rgba(150, 160, 255, 0.14); overflow: hidden; }
+.mini-meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--mini-accent);
+  box-shadow: 0 0 12px var(--mini-accent); transition: width 0.25s ease; }
+.mini-pct { font-variant-numeric: tabular-nums; }
+.mini-stage { position: relative; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mini-accent) 45%, transparent), 0 0 40px -12px var(--mini-accent); }
+.mini canvas { display: block; width: 100%; aspect-ratio: 4 / 5; background: #070414; outline: none; cursor: pointer; }
+.mini canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--mini-accent); }
+.mini.playing canvas { touch-action: none; cursor: none; }
+
+.mini-start { position: absolute; inset: auto 0 0; padding: 48px 18px 18px; text-align: center;
+  background: linear-gradient(transparent, rgba(6, 3, 15, 0.92) 45%); }
+.mini-start .eyebrow { margin-bottom: 12px; color: var(--mini-accent); }
+.mini.playing .mini-start, .mini.carded .mini-start { display: none; }
+.mini-help { color: var(--faint); font-size: 0.85rem; margin-top: 10px; }
+.mini-best { color: var(--muted); font: 600 0.75rem/1 var(--mono); margin-top: 8px; }
+.mini-best:empty { display: none; }
+
+.mini-card { position: absolute; inset: 0; display: grid; align-content: center; gap: 14px; padding: 26px; text-align: center;
+  background: rgba(6, 3, 15, 0.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: mini-in 0.35s ease both; }
+.mini-card[hidden] { display: none; }
+.mini-card h3 { font-size: clamp(1.4rem, 3vw, 1.8rem); outline: none; }
+.mini-card p { color: var(--muted); font-size: 0.95rem; margin: 0; }
+.mini-card .eyebrow { margin: 0; color: var(--mini-accent); }
+.mini-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 4px; }
+.mini-next { position: relative; height: 92px; border-radius: 12px; overflow: hidden; display: grid; align-content: end; justify-items: start;
+  padding: 10px 14px; text-align: left; border: 1px solid rgba(179, 230, 255, 0.4);
+  background: linear-gradient(transparent 20%, rgba(6, 3, 15, 0.85)), var(--next) center 40% / cover; }
+.mini-next::after { content: "🔒"; position: absolute; top: 10px; right: 12px; font-size: 1rem; }
+.mini-next span { font: 600 0.68rem/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: #b3e6ff; }
+.mini-next b { font: 800 1.1rem/1.2 var(--display); color: var(--ink); }
+@keyframes mini-in { from { opacity: 0; transform: scale(0.98); } }
+
+@media (max-width: 860px) { .board.mini { max-width: 440px; } }
+@media (prefers-reduced-motion: reduce) { .mini-card { animation: none; } .mini-meter i { transition: none; } }

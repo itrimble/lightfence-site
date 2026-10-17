@@ -40,8 +40,11 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;600&family=Unbounded:wght@600;800&display=swap" rel="stylesheet" />
   <link rel="preload" as="image" type="image/avif" imagesrcset="img/hero-1440.avif 1440w, img/hero-2560.avif 2560w" imagesizes="100vw" media="(min-width: 700px)" />
   <link rel="stylesheet" href="lightfence.css" />
+  <link rel="stylesheet" href="play.css" />
   <script>document.documentElement.classList.add('js')</script>
   <script src="lightfence.js" defer></script>
+  <script src="play-gl.js" defer></script>
+  <script src="play.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -50,7 +53,7 @@
   <div class="wrap topbar-in">
     <a class="brand" href="#top"><img src="img/favicon-64.png" alt="" width="28" height="28" /><span>Lightfence</span></a>
     <ul class="navlinks">
-      <li><a href="#play">How it plays</a></li>
+      <li><a href="#play">Play</a></li>
       <li><a href="#sectors">Sectors</a></li>
       <li><a href="#guardians">Guardians</a></li>
       <li><a href="#progression">Progression</a></li>
@@ -115,20 +118,26 @@
         <li><h3>Chain and charge</h3><p>Claims within six seconds chain a combo up to 4&times;. Close calls and claimed ground fill <b>Overdrive</b>: eight seconds of slowed enemies and double score.</p></li>
       </ol>
     </div>
-    <div class="board" aria-hidden="true">
-      <svg viewBox="0 0 320 400" class="board-svg">
-        <defs>
-          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="rgba(120,140,255,.18)" stroke-width="1"/></pattern>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        </defs>
-        <rect x="10" y="10" width="300" height="380" fill="url(#grid)" />
-        <polygon class="claim" points="10,10 170,10 170,170 90,170 90,250 10,250" />
-        <rect x="10" y="10" width="300" height="380" rx="2" fill="none" stroke="#22e6ff" stroke-width="3" filter="url(#glow)" />
-        <path class="cut" d="M170 10 V170 H90 V250 H10" fill="none" stroke="#fff36a" stroke-width="3" filter="url(#glow)" />
-        <circle class="marker" r="6" fill="#fff" filter="url(#glow)"><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.55;1" calcMode="linear" path="M170 10 V170 H90 V250 H10" /></circle>
-        <g class="snarl" filter="url(#glow)"><path d="M0 -18 L14 6 L-12 10 Z M-16 -6 L16 -2 L0 18 Z" fill="none" stroke="#ff3dd8" stroke-width="2.5"/></g>
-        <circle class="tracer" r="5" fill="#ffb02e" filter="url(#glow)"><animateMotion dur="9s" repeatCount="indefinite" path="M310 390 H10 V10 H310 Z" /></circle>
-      </svg>
+    <div class="board mini" id="mini">
+      <div class="mini-hud" aria-hidden="true">
+        <span class="mini-sector" data-mini="sector">Demo &middot; Aqua Reef</span>
+        <span class="mini-lives" data-mini="lives"></span>
+        <span class="mini-score" data-mini="score"></span>
+        <span class="mini-meter"><i data-mini="bar"></i></span>
+        <span class="mini-pct" data-mini="pct"></span>
+      </div>
+      <div class="mini-stage">
+        <canvas tabindex="0" width="400" height="500" aria-label="Lightfence mini board. Arrow keys or WASD steer; Escape pauses."></canvas>
+        <div class="mini-start">
+          <p class="eyebrow">Free demo &middot; 3 stages</p>
+          <button class="btn" type="button" data-act="start">Play it here</button>
+          <p class="mini-help">Arrow keys or WASD. On a phone, swipe and hold.</p>
+          <p class="mini-best" data-mini="best"></p>
+        </div>
+        <div class="mini-card" role="dialog" aria-label="Lightfence demo" hidden></div>
+      </div>
+      <p class="sr-only" data-mini="live" aria-live="polite"></p>
+      <noscript><p class="mini-help">The playable board needs JavaScript.</p></noscript>
     </div>
   </section>
 

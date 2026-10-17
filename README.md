@@ -7,6 +7,15 @@ Public marketing site for **Lightfence**, a neon arcade game for iPhone, iPad an
 - PostHog on the page (`posthog.js`), as on the other Remnant app sites
 - A static page: `index.html`, `lightfence.css`, `lightfence.js`; every path is relative
 
+## The playable board
+
+`play.js` (rules, input, the ask), `play-gl.js` (WebGL2 bloom and effects;
+Canvas 2D fallback in play.js) and `play.css` put a three-stage demo of the
+game in How it plays. After the third win it offers the App Store, reading
+the link from the page. The method, research and checklist are in
+`~/projects/site-templates/docs/PLAYABLE-DEMO.md`; test it with
+`site-templates/scripts/test-playable.mjs` (WebGL2, `--nogl`, `--phone`).
+
 ## Where the media comes from
 
 The game repo (`qix-swift`) is the source:
