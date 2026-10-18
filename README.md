@@ -1,6 +1,6 @@
 # lightfence-site
 
-Public marketing site for **Lightfence**, a neon arcade game for iPhone, iPad and Apple TV (coming soon).
+Public marketing site for **Lightfence**, a neon arcade game for Apple TV (now on the App Store), with iPhone and iPad coming soon.
 
 - Preferred host: `https://lightfence.remnantsecurity.com/`
 - GitHub Pages + CNAME `lightfence` → Pages host
@@ -28,6 +28,6 @@ The game repo (`qix-swift`) is the source:
   H.264 and VP9.
 - `media/reel.*`: 1.8 s from 4 s into each of the ten loops, in sector order.
 
-The App Store link is a placeholder until the listing is live (`TODO(store-link)` in `index.html`).
+The tvOS App Store link is live at https://apps.apple.com/us/app/lightfence/id6822773360 - the iPhone/iPad link is still a placeholder until that listing is live (`TODO(ios-store-link)` in `index.html`).
 
 Publisher host: Remnant Security Group LLC portfolio.
