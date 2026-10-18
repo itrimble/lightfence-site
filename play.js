@@ -29,11 +29,16 @@
   var FREE_STAGES = STAGES.length;
   var NEXT = { world: 'ice-spires', name: 'Ice Spires' };
   var RUN = 12, DRAW = 9;                     // player speed on the border / drawing, cells per second
+  var TURN_EARLY = 0.25;                      // a turn asked for a cell or two early is taken when it opens
   var COMBO_WINDOW = 6;
 
   var grid = new Uint8Array(GW * GH), flash = new Float32Array(GW * GH);
   var images = {}, state = 'demo', stage = 0, lives = 3, score = 0, best = 0, combo = 1, lastClaim = -99;
-  var player, trail, snarl, tracers, fuse, still, grace, want = null, acc = 0, now = 0, pct = 0;
+  var player, trail, snarl, tracers, fuse, still, grace, acc = 0, now = 0, pct = 0;
+  // Steering latches, as in the game: the marker keeps the last heading until
+  // it is blocked, a claim closes or it dies. `turn` is a heading asked for
+  // but not yet open.
+  var heading = null, turn = null, turnUntil = 0, stalled = true;
   var plan = [], deaths = 0, sparks = [], ring = { x: 0.5, y: 0.5, t: -9 };
   var layer = document.createElement('canvas'), lctx = layer.getContext('2d');
   var mask = document.createElement('canvas'); mask.width = GW; mask.height = GH;
@@ -64,6 +69,7 @@
     for (var y = 0; y < GH; y++) { grid[idx(0, y)] = FILL; grid[idx(GW - 1, y)] = FILL; }
     player = { x: GW >> 1, y: GH - 1, drawing: false, from: null, dir: null };
     trail = []; fuse = 0; still = 0; grace = 1; acc = 0; pct = 0; combo = 1; plan = []; sparks = [];
+    heading = turn = null; stalled = true;
     var a = Math.random() * Math.PI * 2;
     snarl = { x: GW / 2, y: GH * 0.4, vx: Math.cos(a) * s.snarl, vy: Math.sin(a) * s.snarl, spin: 0, lurch: 1, burst: 0 };
     tracers = [];
@@ -134,6 +140,7 @@
     trail.forEach(function (k) { grid[k] = OPEN; });
     if (player.drawing) { player.x = player.from.x; player.y = player.from.y; }
     player.drawing = false; trail = []; fuse = 0; grace = 1.25; plan = [];
+    heading = turn = null; stalled = true;
     burst(player.x, player.y, 24, '#ff3dd8');
     if (state !== 'play') return;
     lives--; deaths++; combo = 1; hud();
@@ -186,35 +193,52 @@
   // ---- input -----------------------------------------------------------------
   var KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
   var held = [];
-  canvas.addEventListener('keydown', function (e) {
-    var d = KEYS[e.key] || KEYS[e.key.toLowerCase && e.key.toLowerCase()];
-    if (e.key === 'Escape' || e.key === 'p') { if (state === 'play') pause(true); return; }
-    if (!d || state !== 'play') return;
+  function same(a, b) { return !!a && !!b && a[0] === b[0] && a[1] === b[1]; }
+  function steer(d) {
+    if (state !== 'play') return;
+    if (same(d, heading) && !stalled) { turn = null; return; }            // already going that way
+    turn = d; turnUntil = now + TURN_EARLY;
+    if (stalled) acc = Math.max(acc, 1);                                 // a standing marker moves on this frame
+  }
+  // Keys work wherever focus is while a stage is on; the board pauses when
+  // it scrolls away, and then the arrows scroll the page again.
+  document.addEventListener('keydown', function (e) {
+    if (state !== 'play' || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    var key = e.key.length === 1 ? e.key.toLowerCase() : e.key, d = KEYS[key];
+    if (key === 'Escape' || key === 'p') { e.preventDefault(); pause(true); return; }
+    if (!d) return;
     e.preventDefault();
-    if (held.indexOf(d) < 0) held.push(d);
-    want = d;
+    if (!held.some(function (h) { return same(h, d); })) held.push(d);
+    if (!e.repeat) steer(d);
   });
-  canvas.addEventListener('keyup', function (e) {
-    var d = KEYS[e.key] || KEYS[e.key.toLowerCase && e.key.toLowerCase()];
-    held = held.filter(function (h) { return h !== d; });
-    want = held.length ? held[held.length - 1] : null;
+  document.addEventListener('keyup', function (e) {
+    var d = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    held = held.filter(function (h) { return !same(h, d); });
   });
-  canvas.addEventListener('blur', function () { held = []; want = null; });
-  var origin = null;                                                      // finger-relative steering, as in the game
+  window.addEventListener('blur', function () { held = []; });
+  var origin = null, dragged = false;                                     // finger-relative steering, as in the game
   canvas.addEventListener('pointerdown', function (e) {
     if (state !== 'play') return;
-    origin = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); canvas.focus({ preventScroll: true });
+    origin = { x: e.clientX, y: e.clientY }; dragged = false;
+    canvas.setPointerCapture(e.pointerId); canvas.focus({ preventScroll: true });
   });
   canvas.addEventListener('pointermove', function (e) {
     if (!origin) return;
     var dx = e.clientX - origin.x, dy = e.clientY - origin.y;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return;
-    want = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? KEYS.ArrowRight : KEYS.ArrowLeft) : (dy > 0 ? KEYS.ArrowDown : KEYS.ArrowUp);
-    origin = { x: e.clientX, y: e.clientY };
+    steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? KEYS.ArrowRight : KEYS.ArrowLeft) : (dy > 0 ? KEYS.ArrowDown : KEYS.ArrowUp));
+    origin = { x: e.clientX, y: e.clientY }; dragged = true;
   });
-  function lift() { origin = null; want = null; }
-  canvas.addEventListener('pointerup', lift);
-  canvas.addEventListener('pointercancel', lift);
+  canvas.addEventListener('pointerup', function (e) {                     // a tap steers toward it
+    if (origin && !dragged) {
+      var r = canvas.getBoundingClientRect();
+      var dx = (e.clientX - r.left) / r.width * GW - (player.x + 0.5), dy = (e.clientY - r.top) / r.height * GH - (player.y + 0.5);
+      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 1)
+        steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? KEYS.ArrowRight : KEYS.ArrowLeft) : (dy > 0 ? KEYS.ArrowDown : KEYS.ArrowUp));
+    }
+    origin = null;
+  });
+  canvas.addEventListener('pointercancel', function () { origin = null; });
 
   // The demo's hands: run the border a while, then cut a box and come home.
   function autopilot() {
@@ -235,20 +259,46 @@
   }
 
   // ---- the loop ----------------------------------------------------------------
+  function drive(dt) {                                                     // the autopilot's moves
+    var d = autopilot(), moved = false;
+    if (!d) { acc = 0; return false; }
+    acc += (player.drawing ? DRAW : RUN) * dt;
+    while (acc >= 1) {
+      acc -= 1;
+      if (!step(d)) { acc = 0; plan.shift(); break; }
+      moved = true;
+      if (plan.length && --plan[0].n <= 0) plan.shift();
+      if (!player.drawing && plan.length && plan[0].home) plan = [];
+    }
+    return moved;
+  }
+
+  function move(dt) {                                                      // the player's moves
+    if (turn && held.some(function (h) { return same(h, turn); })) turnUntil = now + TURN_EARLY;
+    if (turn && now > turnUntil) turn = null;
+    if (!turn && !heading) { acc = 0; return false; }
+    var moved = false;
+    acc += (player.drawing ? DRAW : RUN) * dt;
+    while (acc >= 1 && state === 'play') {
+      acc -= 1;
+      var was = player.drawing, took = null;
+      if (turn && step(turn)) took = turn;
+      else if (heading && step(heading)) took = heading;
+      if (!took) { acc = 0; stalled = true; break; }
+      moved = true; stalled = false; heading = took;
+      if (took === turn) turn = null;
+      if (was && !player.drawing) {                                        // a claim stops the marker on the border
+        heading = null; stalled = true; acc = 0;
+        if (held.length) { turn = held[held.length - 1]; turnUntil = now + TURN_EARLY; }
+        break;
+      }
+    }
+    return moved;
+  }
+
   function update(dt) {
     now += dt; grace = Math.max(0, grace - dt);
-    var d = state === 'demo' ? autopilot() : want;
-    var moved = false;
-    if (d) {
-      acc += (player.drawing ? DRAW : RUN) * dt;
-      while (acc >= 1) {
-        acc -= 1;
-        if (!step(d)) { acc = 0; if (state === 'demo') plan.shift(); break; }
-        moved = true;
-        if (state === 'demo' && plan.length && --plan[0].n <= 0) plan.shift();
-        if (state === 'demo' && !player.drawing && plan.length && plan[0].home) plan = [];
-      }
-    } else acc = 0;
+    var moved = state === 'demo' ? drive(dt) : move(dt);
     still = moved || !player.drawing ? 0 : still + dt;
     if (player.drawing && still > 0.35) {                                  // the fuse burns up a standing line
       fuse += 10 * dt;
@@ -474,7 +524,8 @@
   if (done && best) root.querySelector('[data-mini="best"]').textContent = 'Your best: ' + best.toLocaleString();
   start();
   if (/[?&]minitest\b/.test(location.search))                          // for scripted tests only
-    window.__mini = { get: function () { return { state: state, stage: stage, pct: pct, lives: lives, score: score }; },
+    window.__mini = { get: function () { return { state: state, stage: stage, pct: pct, lives: lives, score: score,
+                                                  x: player.x, y: player.y, drawing: player.drawing }; },
                       win: function () { pct = 1; win(); },
                       calm: function () { snarl.x = GW - 6; snarl.y = 6; snarl.vx = snarl.vy = 0.001; STAGES[stage].snarl = 0.001; tracers = []; } };
 })();
