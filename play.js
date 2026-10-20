@@ -1,90 +1,117 @@
 // Lightfence mini board: the game's core rules on a small grid, playable on
 // the page. Run the border, cut into open ground, close the cut to claim the
 // side without the Snarl. No reversing, no touching your own line, and a line
-// left standing lights a fuse. Tracers patrol the border. Claimed ground shows
-// the sector's world. Before Play it plays itself.
+// left standing lights a fuse. Tracers patrol the border; walls block lines
+// and the Snarl. Claimed ground shows the sector's world. Before Play it plays
+// itself. Drawing is in play-draw.js (and play-gl.js with a GPU).
 //
-// Free play is three stages (see FREE_STAGES). After the third win the page
-// offers the App Store, once, at the high point; losses never count. The
-// method is written up in site-templates/docs/PLAYABLE-DEMO.md.
+// The three free stages are the game's first three, Aqua Reef 1-3 (qix-swift
+// LevelCatalog + Resources/WaveRecipes/campaign-layouts.json). After the
+// third win the page offers the App Store, once, at the high point; losses
+// never count. The method is in site-templates/docs/PLAYABLE-DEMO.md.
 (function () {
   'use strict';
   var root = document.getElementById('mini');
-  if (!root) return;
+  if (!root || !window.LightfenceDraw || !window.LightfenceHud) return;
   var canvas = root.querySelector('canvas');
   // With WebGL2 the frame is drawn off screen and finished on the GPU (play-gl.js).
   var gpu = window.LightfenceGL ? window.LightfenceGL.create(canvas) : null;
-  var scene = gpu ? document.createElement('canvas') : canvas;
-  var ctx = scene.getContext('2d');
   root.dataset.renderer = gpu ? 'webgl2' : 'canvas2d';
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  var GW = 40, GH = 50;                       // cells; the phone's portrait board
-  var OPEN = 0, FILL = 1, TRAIL = 2;
+  var GW = 40, GH = 46;                       // cells; the phone's board, about 28 x 32 game units
+  var OPEN = 0, FILL = 1, TRAIL = 2, WALL = 3;
+  // Speeds in cells a second (1 game unit = 1.4 cells). The game: player 9 u/s on
+  // the border and 0.75 of that drawing; Snarl 3 u/s, erratic 0.5, aggression
+  // 0.15; Tracers 5 u/s (6.5 on Perimeter Patrol); win at 66 %. Stages 1-2 are
+  // softened for a first-time player (see the README).
   var STAGES = [
-    { world: 'aqua-reef', name: 'Aqua Reef', accent: '#33f2ff', target: 0.55, snarl: 6.5, tracers: 1, tracer: 5.5 },
-    { world: 'crystal-caverns', name: 'Crystal Caverns', accent: '#59ff80', target: 0.6, snarl: 7.5, tracers: 2, tracer: 6 },
-    { world: 'magma-core', name: 'Magma Core', accent: '#ff8026', target: 0.65, snarl: 9, tracers: 2, tracer: 7 }
+    { title: 'Reef Twin Gates', target: 0.6, snarl: 4.3, art: 'blue', tracers: 1, tracer: 7, spawn: [0.66, 0.62],
+      walls: [[0.197, 0.255, 0.064, 0.068], [0.707, 0.63, 0.08, 0.098]] },
+    { title: 'Reef Broken Causeway', target: 0.63, snarl: 4.35, art: 'green', tracers: 2, tracer: 7, spawn: [0.34, 0.635],
+      walls: [[0.095, 0.405, 0.064, 0.068], [0.299, 0.63, 0.08, 0.098], [0.605, 0.255, 0.08, 0.11]] },
+    { title: 'Reef Staggered Columns', target: 0.66, snarl: 4.4, art: 'red', tracers: 3, tracer: 8.5, spawn: [0.534, 0.68],
+      walls: [[0.197, 0.255, 0.064, 0.068], [0.197, 0.555, 0.08, 0.098], [0.707, 0.405, 0.08, 0.11]] }
   ];
   var FREE_STAGES = STAGES.length;
-  var NEXT = { world: 'ice-spires', name: 'Ice Spires' };
-  var RUN = 12, DRAW = 9;                     // player speed on the border / drawing, cells per second
-  var TURN_EARLY = 0.25;                      // a turn asked for a cell or two early is taken when it opens
-  var COMBO_WINDOW = 6;
+  var RUN = 12, DRAW = 9, TURN_EARLY = 0.25, COMBO_WINDOW = 6, HIT = 2.0;
 
-  var grid = new Uint8Array(GW * GH), flash = new Float32Array(GW * GH);
-  var images = {}, state = 'demo', stage = 0, lives = 3, score = 0, best = 0, combo = 1, lastClaim = -99;
-  var player, trail, snarl, tracers, fuse, still, grace, acc = 0, now = 0, pct = 0;
+  var grid = new Uint8Array(GW * GH);
+  var state = 'demo', stage = 0, lives = 3, score = 0, best = 0, combo = 1, lastClaim = -99;
+  var player, trail = [], snarl, tracers = [], walls = [], fuse = 0, still = 0, grace = 0, acc = 0, now = 0, pct = 0;
   // Steering latches, as in the game: the marker keeps the last heading until
-  // it is blocked, a claim closes or it dies. `turn` is a heading asked for
-  // but not yet open.
+  // it is blocked, a claim closes or it dies. `turn` is a heading asked for but not yet open.
   var heading = null, turn = null, turnUntil = 0, stalled = true;
-  var plan = [], deaths = 0, sparks = [], ring = { x: 0.5, y: 0.5, t: -9 };
-  var layer = document.createElement('canvas'), lctx = layer.getContext('2d');
-  var mask = document.createElement('canvas'); mask.width = GW; mask.height = GH;
-  var cell = 8, dirty = true, running = false, visible = true;
+  var plan = [], deaths = 0, sparks = [], ring = { x: 0.5, y: 0.5, t: -9 }, running = false, visible = true, light = 0, lean = [0, 0];
 
   try { best = +localStorage.getItem('lf-mini-best') || 0; } catch (e) { /* storage off */ }
 
-  function track(name, props) { if (window.posthog && window.posthog.capture) window.posthog.capture(name, props || {}); }
-  function img(world) {
-    if (!images[world]) { var i = new Image(); i.onload = function () { dirty = true; }; i.src = 'img/world-' + world + '.webp'; images[world] = i; }
-    return images[world];
+  // ---- art, loaded when the board comes near ----------------------------------------
+  var img = {}, loaded = false;
+  function load() {
+    if (loaded) return; loaded = true;
+    var files = { far: 'reef-far', near: 'reef-near', wall: 'reef-wall', tracer: 'tracer', marker: 'marker',
+                  blue: 'snarl-blue', green: 'snarl-green', red: 'snarl-red' };
+    Object.keys(files).forEach(function (k) {
+      var i = new Image(); i.decoding = 'async'; i.onload = function () { if (!running) render(); };
+      i.src = 'img/play/' + files[k] + '.webp'; img[k] = i;
+    });
   }
+  var G = { GW: GW, GH: GH, OPEN: OPEN, FILL: FILL, TRAIL: TRAIL, WALL: WALL, grid: grid, img: img,
+            scene: gpu ? document.createElement('canvas') : canvas, glow: gpu ? document.createElement('canvas') : null };
+  var draw = window.LightfenceDraw.create(G);
+
+  function track(name, props) { if (window.posthog && window.posthog.capture) window.posthog.capture(name, props || {}); }
   function idx(x, y) { return y * GW + x; }
   function inside(x, y) { return x >= 0 && y >= 0 && x < GW && y < GH; }
   function at(x, y) { return inside(x, y) ? grid[idx(x, y)] : FILL; }
-  function edge(x, y) {
+  function edge(x, y) {                         // border: claimed ground next to open ground or the line
     if (at(x, y) !== FILL || !inside(x, y)) return false;
-    for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++)
-      if (inside(x + dx, y + dy) && grid[idx(x + dx, y + dy)] !== FILL) return true;
+    for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) {
+      var c = at(x + dx, y + dy);
+      if (inside(x + dx, y + dy) && (c === OPEN || c === TRAIL)) return true;
+    }
     return false;
   }
 
-  // ---- a stage -------------------------------------------------------------
+  // ---- a stage -------------------------------------------------------------------
   function setup(n) {
     var s = STAGES[n % STAGES.length];
-    stage = n % STAGES.length; grid.fill(OPEN); flash.fill(0);
+    stage = n % STAGES.length; grid.fill(OPEN);
     for (var x = 0; x < GW; x++) { grid[idx(x, 0)] = FILL; grid[idx(x, GH - 1)] = FILL; }
     for (var y = 0; y < GH; y++) { grid[idx(0, y)] = FILL; grid[idx(GW - 1, y)] = FILL; }
+    walls = s.walls.map(function (r) {         // layout rects are fractions of the board, y from the near edge
+      var x0 = Math.max(2, Math.ceil(r[0] * (GW - 1))), x1 = Math.max(x0, Math.floor((r[0] + r[2]) * (GW - 1)));
+      var y0 = Math.max(2, Math.ceil((1 - r[1] - r[3]) * (GH - 1))), y1 = Math.max(y0, Math.floor((1 - r[1]) * (GH - 1)));
+      for (var yy = y0; yy <= y1; yy++) for (var xx = x0; xx <= x1; xx++) grid[idx(xx, yy)] = WALL;
+      return [x0, y0, x1, y1];
+    });
     player = { x: GW >> 1, y: GH - 1, drawing: false, from: null, dir: null };
     trail = []; fuse = 0; still = 0; grace = 1; acc = 0; pct = 0; combo = 1; plan = []; sparks = [];
     heading = turn = null; stalled = true;
-    var a = Math.random() * Math.PI * 2;
-    snarl = { x: GW / 2, y: GH * 0.4, vx: Math.cos(a) * s.snarl, vy: Math.sin(a) * s.snarl, spin: 0, lurch: 1, burst: 0 };
+    var sp = clear(s.spawn[0] * (GW - 1), (1 - s.spawn[1]) * (GH - 1));
+    snarl = { x: sp[0] + 0.5, y: sp[1] + 0.5, h: Math.random() * 6.283, turnT: 1, frozen: false };
     tracers = [];
     for (var i = 0; i < s.tracers; i++)
-      tracers.push({ x: i ? GW - 1 : 0, y: 0, dir: i ? [0, 1] : [1, 0], left: !!i, acc: 0, speed: s.tracer * (1 + i * 0.08) });
-    img(s.world); img(STAGES[(n + 1) % STAGES.length].world);
-    root.style.setProperty('--mini-accent', s.accent);
-    dirty = true; hud();
+      tracers.push({ x: Math.round(GW * (i + 1) / (s.tracers + 1)), y: 0, dir: i % 2 ? [-1, 0] : [1, 0], left: !!(i % 2), acc: 0, speed: s.tracer });
+    G.snarlArt = s.art; G.walls = walls; G.stageNo = stage + 1;
+    draw.rebuild(false); hud();
+  }
+  function clear(fx, fy) {                     // the nearest open cell with room round it (obstacleField.spawn)
+    for (var r = 0; r < 20; r++) for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+      var x = Math.round(fx) + dx, y = Math.round(fy) + dy, ok = true;
+      for (var j = -3; j <= 3 && ok; j++) for (var i = -3; i <= 3 && ok; i++) if (at(x + i, y + j) !== OPEN) ok = false;
+      if (ok) return [x, y];
+    }
+    return [GW >> 1, GH >> 1];
   }
 
-  // ---- the player and the line -------------------------------------------------
+  // ---- the player and the line -------------------------------------------------------
   function step(d) {
     var nx = player.x + d[0], ny = player.y + d[1];
     if (!inside(nx, ny)) return false;
     var c = grid[idx(nx, ny)];
+    if (c === WALL) return false;
     if (!player.drawing) {
       if (c === FILL) { if (!edge(nx, ny)) return false; player.x = nx; player.y = ny; return true; }
       player.drawing = true; player.from = { x: player.x, y: player.y }; player.dir = d; trail = [];
@@ -103,8 +130,9 @@
 
   function close() {
     var claimed = 0, seen = new Uint8Array(GW * GH), stack = [];
-    trail.forEach(function (k) { grid[k] = FILL; flash[k] = now; });
+    trail.forEach(function (k) { grid[k] = FILL; });
     var sx = Math.floor(snarl.x), sy = Math.floor(snarl.y);
+    if (at(sx, sy) !== OPEN) { var c = clear(sx, sy); sx = c[0]; sy = c[1]; }
     if (at(sx, sy) === OPEN) stack.push(idx(sx, sy));
     while (stack.length) {
       var k = stack.pop();
@@ -115,24 +143,25 @@
       if (y > 0) stack.push(k - GW); if (y < GH - 1) stack.push(k + GW);
     }
     var cx = 0, cy = 0;
-    for (var i = 0; i < grid.length; i++) if (grid[i] === OPEN && !seen[i]) { grid[i] = FILL; flash[i] = now; claimed++; cx += i % GW; cy += (i / GW) | 0; }
-    if (claimed) ring = { x: (cx / claimed + 0.5) / GW, y: 1 - (cy / claimed + 0.5) / GH, t: now };
+    for (var i = 0; i < grid.length; i++) if (grid[i] === OPEN && !seen[i]) { grid[i] = FILL; claimed++; cx += i % GW; cy += (i / GW) | 0; }
+    if (claimed) { var c2 = draw.project(cx / claimed, cy / claimed); ring = { x: c2[0], y: 1 - c2[1], t: now }; }
     claimed += trail.length;
     player.drawing = false; trail = []; fuse = 0;
-    combo = now - lastClaim < COMBO_WINDOW ? Math.min(combo + 0.5, 3) : 1; lastClaim = now;
-    var gained = claimed / ((GW - 2) * (GH - 2));
-    if (state === 'play') score += Math.round(gained * 10000 * combo);
+    combo = now - lastClaim < COMBO_WINDOW ? Math.min(combo + 1, 4) : 1; lastClaim = now;
+    var gained = claimed / playable();
+    if (state === 'play') { score += Math.round(gained * 10000 * combo); sound('claim'); if (combo > 1) sound('combo', 0.7); }
     burst(player.x, player.y, Math.min(40, 8 + claimed / 8));
     tracers.forEach(reseat);
-    measure(); dirty = true; hud();
+    measure(); draw.rebuild(true); hud();
     if (state === 'play' && pct >= STAGES[stage].target) win();
     if (state === 'demo' && pct >= 0.6) setTimeout(function () { if (state === 'demo') setup(stage + 1); }, 900);
   }
 
+  function playable() { return (GW - 2) * (GH - 2) - walls.reduce(function (n, w) { return n + (w[2] - w[0] + 1) * (w[3] - w[1] + 1); }, 0); }
   function measure() {
     var n = 0;
     for (var y = 1; y < GH - 1; y++) for (var x = 1; x < GW - 1; x++) if (grid[idx(x, y)] === FILL) n++;
-    pct = n / ((GW - 2) * (GH - 2));
+    pct = n / playable();
   }
 
   function die() {
@@ -141,32 +170,36 @@
     if (player.drawing) { player.x = player.from.x; player.y = player.from.y; }
     player.drawing = false; trail = []; fuse = 0; grace = 1.25; plan = [];
     heading = turn = null; stalled = true;
-    burst(player.x, player.y, 24, '#ff3dd8');
+    burst(player.x, player.y, 24, '#ff4033');
     if (state !== 'play') return;
-    lives--; deaths++; combo = 1; hud();
+    lives--; deaths++; combo = 1; sound('die'); hud();
     if (lives <= 0) over();
   }
-
-  // ---- the Snarl and the Tracers ------------------------------------------------
-  function moveSnarl(dt) {
-    var s = STAGES[stage], speed = s.snarl * (snarl.burst > 0 ? 1.7 : 1);
-    snarl.spin += dt * 2.4; snarl.lurch -= dt; snarl.burst -= dt;
-    if (snarl.lurch <= 0) {                                             // lurches without warning
-      var a = Math.atan2(snarl.vy, snarl.vx) + (Math.random() - 0.5) * 2.2;
-      if (player.drawing && Math.random() < 0.5) a = Math.atan2(player.y - snarl.y, player.x - snarl.x);
-      snarl.vx = Math.cos(a) * s.snarl; snarl.vy = Math.sin(a) * s.snarl;
-      snarl.lurch = 0.8 + Math.random() * 1.2; snarl.burst = 0.3;
+  // ---- the Snarl and the Tracers ------------------------------------------------------
+  function blocked(x, y) { var c = at(Math.floor(x), Math.floor(y)); return c === FILL || c === WALL; }
+  function moveSnarl(dt) {                     // QixGame.moveQix: erratic lurches, bending toward an open line
+    if (snarl.frozen) return;
+    var s = STAGES[stage];
+    snarl.turnT -= dt;
+    if (snarl.turnT <= 0) {
+      snarl.turnT = 0.7 + Math.random() * 1.1;
+      var m = (0.5 + Math.random() * 1.4) * 0.5; snarl.h += Math.random() < 0.5 ? m : -m;
     }
-    var m = Math.hypot(snarl.vx, snarl.vy) || 1, steps = Math.ceil(speed * dt / 0.4);
+    if (trail.length >= 2) {
+      var bestD = 1e9, tx = 0, ty = 0;
+      trail.forEach(function (k) { var dx = k % GW + 0.5 - snarl.x, dy = ((k / GW) | 0) + 0.5 - snarl.y, d = dx * dx + dy * dy; if (d < bestD) { bestD = d; tx = dx; ty = dy; } });
+      var turnBy = Math.atan2(ty, tx) - snarl.h; turnBy = Math.atan2(Math.sin(turnBy), Math.cos(turnBy));
+      var lim = 0.15 * 2.4 * dt; snarl.h += Math.max(-lim, Math.min(lim, turnBy));
+    }
+    var steps = Math.ceil(s.snarl * dt / 0.3), r = 2.2;              // ~ the game's body radius, 1.68 u
     for (var i = 0; i < steps; i++) {
-      var nx = snarl.x + snarl.vx / m * speed * dt / steps, ny = snarl.y + snarl.vy / m * speed * dt / steps;
-      if (at(Math.floor(nx), Math.floor(snarl.y)) === FILL) snarl.vx = -snarl.vx; else snarl.x = nx;
-      if (at(Math.floor(snarl.x), Math.floor(ny)) === FILL) snarl.vy = -snarl.vy; else snarl.y = ny;
+      var dx = Math.cos(snarl.h) * s.snarl * dt / steps, dy = Math.sin(snarl.h) * s.snarl * dt / steps;
+      if (blocked(snarl.x + dx + (dx > 0 ? r : -r), snarl.y)) snarl.h = Math.PI - snarl.h; else snarl.x += dx;
+      if (blocked(snarl.x, snarl.y + dy + (dy > 0 ? r : -r))) snarl.h = -snarl.h; else snarl.y += dy;
     }
-    for (var arm = 0; arm < 3; arm++) {                                  // its arms cut lines too
-      var t = snarl.spin + arm * 2.094;
-      for (var r = 0; r <= 2.2; r += 0.55)
-        if (at(Math.floor(snarl.x + Math.cos(t) * r), Math.floor(snarl.y + Math.sin(t) * r)) === TRAIL) { die(); return; }
+    for (var j = 0; j < trail.length; j++) {    // its body cuts the line
+      var ex = trail[j] % GW + 0.5 - snarl.x, ey = ((trail[j] / GW) | 0) + 0.5 - snarl.y;
+      if (ex * ex + ey * ey < HIT * HIT) { die(); return; }
     }
   }
 
@@ -189,8 +222,7 @@
     }
     if (!player.drawing && Math.abs(t.x - player.x) + Math.abs(t.y - player.y) <= 1) die();
   }
-
-  // ---- input -----------------------------------------------------------------
+  // ---- input -------------------------------------------------------------------------
   var KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0] };
   var held = [];
   function same(a, b) { return !!a && !!b && a[0] === b[0] && a[1] === b[1]; }
@@ -206,6 +238,7 @@
     if (state !== 'play' || e.metaKey || e.ctrlKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
     var key = e.key.length === 1 ? e.key.toLowerCase() : e.key, d = KEYS[key];
     if (key === 'Escape' || key === 'p') { e.preventDefault(); pause(true); return; }
+    if (key === 'm') { e.preventDefault(); toggleSound(); return; }
     if (!d) return;
     e.preventDefault();
     if (!held.some(function (h) { return same(h, d); })) held.push(d);
@@ -216,6 +249,7 @@
     held = held.filter(function (h) { return !same(h, d); });
   });
   window.addEventListener('blur', function () { held = []; });
+  function toward(dx, dy) { return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? KEYS.ArrowRight : KEYS.ArrowLeft) : (dy > 0 ? KEYS.ArrowDown : KEYS.ArrowUp); }
   var origin = null, dragged = false;                                     // finger-relative steering, as in the game
   canvas.addEventListener('pointerdown', function (e) {
     if (state !== 'play') return;
@@ -226,20 +260,17 @@
     if (!origin) return;
     var dx = e.clientX - origin.x, dy = e.clientY - origin.y;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return;
-    steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? KEYS.ArrowRight : KEYS.ArrowLeft) : (dy > 0 ? KEYS.ArrowDown : KEYS.ArrowUp));
-    origin = { x: e.clientX, y: e.clientY }; dragged = true;
+    steer(toward(dx, dy)); origin = { x: e.clientX, y: e.clientY }; dragged = true;
   });
-  canvas.addEventListener('pointerup', function (e) {                     // a tap steers toward it
+  canvas.addEventListener('pointerup', function (e) {                     // a tap steers toward it, on the tilted board
     if (origin && !dragged) {
-      var r = canvas.getBoundingClientRect();
-      var dx = (e.clientX - r.left) / r.width * GW - (player.x + 0.5), dy = (e.clientY - r.top) / r.height * GH - (player.y + 0.5);
-      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 1)
-        steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? KEYS.ArrowRight : KEYS.ArrowLeft) : (dy > 0 ? KEYS.ArrowDown : KEYS.ArrowUp));
+      var r = canvas.getBoundingClientRect(), k = G.scene.width / r.width;
+      var g = draw.unproject((e.clientX - r.left) * k, (e.clientY - r.top) * k), dx = g[0] - player.x, dy = g[1] - player.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) >= 1) steer(toward(dx, dy));
     }
     origin = null;
   });
   canvas.addEventListener('pointercancel', function () { origin = null; });
-
   // The demo's hands: run the border a while, then cut a box and come home.
   function autopilot() {
     if (grace > 0) return null;
@@ -248,6 +279,7 @@
       for (var i = 0; i < 4; i++) if (at(player.x + dirs[i][0], player.y + dirs[i][1]) === OPEN) inward = dirs[i];
       if (!inward || Math.random() < 0.4) {
         var along = dirs.filter(function (d) { return edge(player.x + d[0], player.y + d[1]); });
+        if (!along.length) return null;
         plan.push({ d: along[(Math.random() * along.length) | 0], n: 3 + ((Math.random() * 8) | 0) });
       } else {
         var side = Math.random() < 0.5 ? [inward[1], -inward[0]] : [-inward[1], inward[0]];
@@ -258,7 +290,7 @@
     return plan[0].d;
   }
 
-  // ---- the loop ----------------------------------------------------------------
+  // ---- the loop -------------------------------------------------------------------------
   function drive(dt) {                                                     // the autopilot's moves
     var d = autopilot(), moved = false;
     if (!d) { acc = 0; return false; }
@@ -313,91 +345,33 @@
     if (reduce.matches) return;
     for (var i = 0; i < n; i++) {
       var a = Math.random() * 6.283, v = 4 + Math.random() * 12;
-      sparks.push({ x: x + 0.5, y: y + 0.5, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0.4 + Math.random() * 0.5, c: color || STAGES[stage].accent });
+      sparks.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0.4 + Math.random() * 0.5, c: color || '#33f2ff' });
     }
   }
 
-  // ---- drawing -------------------------------------------------------------------
+  // ---- drawing (play-draw.js) ---------------------------------------------------------------
+  var cssW = 0;                                 // phones fire resize as their toolbars slide; only a new width redraws
   function resize() {
-    var w = canvas.clientWidth, dpr = Math.min(window.devicePixelRatio || 1, 2);
-    scene.width = canvas.width = Math.round(w * dpr); scene.height = canvas.height = Math.round(w * GH / GW * dpr);
-    layer.width = canvas.width; layer.height = canvas.height;
-    cell = canvas.width / GW; dirty = true;
+    var w = canvas.clientWidth || 360;
+    if (w === cssW) return;
+    cssW = w; draw.resize(w);
+    if (gpu) { canvas.width = G.scene.width; canvas.height = G.scene.height; }
+    if (!running) render(0);
   }
-
-  function rebuild() {                                                     // claimed ground shows the world
-    var s = STAGES[stage], im = img(s.world), W = layer.width, H = layer.height;
-    var data = new ImageData(GW, GH);
-    for (var i = 0; i < grid.length; i++) data.data[i * 4 + 3] = grid[i] === FILL ? 255 : 0;
-    mask.getContext('2d').putImageData(data, 0, 0);
-    lctx.globalCompositeOperation = 'source-over'; lctx.clearRect(0, 0, W, H);
-    if (im.complete && im.naturalWidth) {
-      var sc = Math.max(W / im.naturalWidth, H / im.naturalHeight);
-      lctx.drawImage(im, (W - im.naturalWidth * sc) / 2, (H - im.naturalHeight * sc) / 2, im.naturalWidth * sc, im.naturalHeight * sc);
-    } else { lctx.fillStyle = s.accent; lctx.globalAlpha = 0.3; lctx.fillRect(0, 0, W, H); lctx.globalAlpha = 1; }
-    lctx.globalCompositeOperation = 'destination-in'; lctx.imageSmoothingEnabled = false;
-    lctx.drawImage(mask, 0, 0, W, H);
-    lctx.globalCompositeOperation = 'source-over';
-    lctx.strokeStyle = s.accent; lctx.lineWidth = Math.max(1.5, cell * 0.22); lctx.shadowColor = s.accent; lctx.shadowBlur = cell;
-    lctx.beginPath();
-    for (var y = 0; y < GH; y++) for (var x = 0; x < GW; x++) {
-      if (grid[idx(x, y)] !== FILL) continue;
-      if (at(x, y - 1) !== FILL && y > 0) { lctx.moveTo(x * cell, y * cell); lctx.lineTo((x + 1) * cell, y * cell); }
-      if (at(x, y + 1) !== FILL && y < GH - 1) { lctx.moveTo(x * cell, (y + 1) * cell); lctx.lineTo((x + 1) * cell, (y + 1) * cell); }
-      if (at(x - 1, y) !== FILL && x > 0) { lctx.moveTo(x * cell, y * cell); lctx.lineTo(x * cell, (y + 1) * cell); }
-      if (at(x + 1, y) !== FILL && x < GW - 1) { lctx.moveTo((x + 1) * cell, y * cell); lctx.lineTo((x + 1) * cell, (y + 1) * cell); }
+  function render(dt) {
+    var moving = !reduce.matches;
+    // The world brightens as ground is won back, and fully when the stage is cleared (WorldStory).
+    var goal = state === 'won' || state === 'done' ? 1 : Math.min(1, pct / STAGES[stage].target) * 0.75;
+    light += (goal - light) * Math.min(1, (dt || 1) * 1.5);
+    var lx = player.x / (GW - 1) - 0.5, ly = player.y / (GH - 1) - 0.5;
+    lean[0] += (lx - lean[0]) * Math.min(1, (dt || 1) * 1.2); lean[1] += (ly - lean[1]) * Math.min(1, (dt || 1) * 1.2);
+    G.player = player; G.trail = trail; G.snarl = snarl; G.tracers = tracers; G.sparks = sparks;
+    G.fuse = fuse; G.grace = grace; G.dt = dt || 0; G.now = now; G.light = light; G.lean = moving ? lean : [0, 0]; G.reduce = !moving;
+    draw.draw(performance.now() / 1000, moving);
+    if (gpu) {
+      var s = draw.project(snarl.x - 0.5, snarl.y - 0.5);
+      gpu.render(G.scene, G.glow, { claim: [ring.x, ring.y, Math.min(1, (now - ring.t) / 0.8)], snarl: [s[0], 1 - s[1]], time: now, motion: moving ? 1 : 0 });
     }
-    lctx.stroke(); lctx.shadowBlur = 0;
-    dirty = false;
-  }
-
-  function glow(color, blur) { ctx.shadowColor = color; ctx.shadowBlur = gpu || reduce.matches ? 0 : blur; }   // the GPU blooms instead
-
-  function draw() {
-    if (dirty) rebuild();
-    var W = canvas.width, H = canvas.height, c = cell;
-    ctx.fillStyle = '#070414'; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(120,140,255,.10)'; ctx.lineWidth = 1; ctx.beginPath();
-    for (var gx = 0; gx <= GW; gx += 2) { ctx.moveTo(gx * c, 0); ctx.lineTo(gx * c, H); }
-    for (var gy = 0; gy <= GH; gy += 2) { ctx.moveTo(0, gy * c); ctx.lineTo(W, gy * c); }
-    ctx.stroke();
-    ctx.drawImage(layer, 0, 0);
-    if (!reduce.matches) {                                                 // the claim lights up, then settles
-      ctx.fillStyle = '#fff';
-      for (var i = 0; i < flash.length; i++) {
-        var age = now - flash[i];
-        if (flash[i] && age < 0.5) { ctx.globalAlpha = (0.5 - age) * 1.2; ctx.fillRect((i % GW) * c, ((i / GW) | 0) * c, c, c); }
-      }
-      ctx.globalAlpha = 1;
-    }
-    if (trail.length) {
-      glow('#fff36a', c * 1.5); ctx.strokeStyle = '#fff36a'; ctx.lineWidth = c * 0.35; ctx.lineJoin = 'round'; ctx.beginPath();
-      ctx.moveTo((player.from.x + 0.5) * c, (player.from.y + 0.5) * c);
-      trail.forEach(function (k) { ctx.lineTo((k % GW + 0.5) * c, (((k / GW) | 0) + 0.5) * c); });
-      ctx.stroke();
-      if (fuse > 0) {
-        var f = trail[Math.min(trail.length - 1, Math.floor(fuse))];
-        glow('#fff', c * 2); ctx.fillStyle = '#fff'; ctx.beginPath();
-        ctx.arc((f % GW + 0.5) * c, (((f / GW) | 0) + 0.5) * c, c * 0.5, 0, 7); ctx.fill();
-      }
-    }
-    glow('#ff3dd8', c * 2); ctx.strokeStyle = '#ff3dd8'; ctx.lineWidth = c * 0.28; ctx.beginPath();
-    for (var a = 0; a < 3; a++) {
-      var t = snarl.spin + a * 2.094, r = 2.2 * c, x = snarl.x * c, y = snarl.y * c;
-      ctx.moveTo(x - Math.cos(t) * r, y - Math.sin(t) * r); ctx.lineTo(x + Math.cos(t) * r, y + Math.sin(t) * r);
-    }
-    ctx.stroke();
-    glow('#ffb02e', c * 1.5); ctx.fillStyle = '#ffb02e';
-    tracers.forEach(function (tr) { ctx.beginPath(); ctx.arc((tr.x + 0.5) * c, (tr.y + 0.5) * c, c * 0.5, 0, 7); ctx.fill(); });
-    if (!(grace > 0 && Math.floor(now * 10) % 2)) {
-      glow('#fff', c * 2); ctx.fillStyle = '#fff'; ctx.beginPath();
-      ctx.arc((player.x + 0.5) * c, (player.y + 0.5) * c, c * 0.62, 0, 7); ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-    sparks.forEach(function (p) { ctx.globalAlpha = Math.min(1, p.t * 2); ctx.fillStyle = p.c; ctx.fillRect(p.x * c, p.y * c, c * 0.3, c * 0.3); });
-    ctx.globalAlpha = 1;
-    if (gpu) gpu.render(scene, { claim: [ring.x, ring.y, Math.min(1, (now - ring.t) / 0.8)],
-                                 snarl: [snarl.x / GW, 1 - snarl.y / GH], time: now, motion: reduce.matches ? 0 : 1 });
   }
 
   var last = 0;
@@ -405,29 +379,17 @@
     if (!running) return;
     var dt = Math.min(0.05, (t - (last || t)) / 1000); last = t;
     if (state === 'play' || state === 'demo') update(dt);
-    draw();
+    render(dt);
     requestAnimationFrame(frame);
   }
   function start() { if (!running && visible) { running = true; last = 0; requestAnimationFrame(frame); } }
   function stop() { running = false; }
 
-  // ---- the page around the board -----------------------------------------------------
-  var ui = {
-    hud: root.querySelector('.mini-hud'), sector: root.querySelector('[data-mini="sector"]'),
-    bar: root.querySelector('[data-mini="bar"]'), pct: root.querySelector('[data-mini="pct"]'),
-    lives: root.querySelector('[data-mini="lives"]'), score: root.querySelector('[data-mini="score"]'),
-    live: root.querySelector('[data-mini="live"]'), card: root.querySelector('.mini-card')
-  };
-  function hud() {
-    var s = STAGES[stage];
-    ui.sector.textContent = state === 'demo' ? 'Demo · ' + s.name : 'Stage ' + (stage + 1) + ' of ' + FREE_STAGES + ' · ' + s.name;
-    ui.pct.textContent = Math.round(pct * 100) + '% of ' + Math.round(s.target * 100) + '%';
-    ui.bar.style.width = Math.min(100, pct / s.target * 100) + '%';
-    ui.lives.textContent = state === 'demo' ? '' : '◆'.repeat(Math.max(0, lives));
-    ui.lives.setAttribute('aria-label', lives + ' lives');
-    ui.score.textContent = state === 'demo' ? '' : score.toLocaleString();
-  }
-  function say(text) { ui.live.textContent = text; }
+  // ---- the page around the board -------------------------------------------------------------
+  var H = window.LightfenceHud.create(root), ui = H.ui;
+  function hud() { var s = STAGES[stage]; H.update({ stage: stage, stages: FREE_STAGES, title: s.title, target: s.target, pct: pct, lives: lives, score: score, best: best }); }
+  function say(text) { H.say(text); } function sound(n, vol) { H.play(n, vol); }
+  function toggleSound() { H.toggle(state !== 'demo' && state !== 'still'); }
 
   function storeUrl(ct) {
     var a = document.querySelector('a[href*="apps.apple.com"]');
@@ -436,7 +398,7 @@
   }
 
   function card(html, focus) {
-    ui.card.innerHTML = html; ui.card.hidden = false; root.classList.add('carded');
+    ui.card.innerHTML = html; ui.card.hidden = false; root.classList.add('carded'); ui.pause.hidden = true;
     var first = ui.card.querySelector(focus || 'h3');
     if (first) { first.setAttribute('tabindex', '-1'); first.focus({ preventScroll: true }); }
     ui.card.querySelectorAll('[data-act]').forEach(function (b) { b.addEventListener('click', act); });
@@ -452,18 +414,22 @@
   }
 
   function play(fromStage) {
-    hideCard(); state = 'play'; lives = 3; score = fromStage ? score : 0; deaths = 0;
-    setup(fromStage || 0); canvas.focus({ preventScroll: true }); root.classList.add('playing');
-    say('Stage ' + (stage + 1) + ': claim ' + Math.round(STAGES[stage].target * 100) + ' percent.');
+    hideCard(); load(); H.start(); state = 'play'; lives = 3; score = fromStage ? score : 0; deaths = 0;
+    setup(fromStage || 0); canvas.focus({ preventScroll: true }); root.classList.add('playing'); ui.pause.hidden = false;
+    sound('confirm', 0.8);
+    say('Stage ' + (stage + 1) + ', ' + STAGES[stage].title + ': claim ' + Math.round(STAGES[stage].target * 100) + ' percent.');
     track('mini_play_start', { stage: stage + 1 }); start();
   }
 
   function win() {
-    state = 'won'; burst(player.x, player.y, 60);
+    state = 'won'; burst(player.x, player.y, 60); sound('win');
     track('mini_stage_clear', { stage: stage + 1, score: score });
     say('Stage ' + (stage + 1) + ' cleared.');
     if (stage + 1 < FREE_STAGES) {
-      setTimeout(function () { state = 'play'; var keep = score; setup(stage + 1); score = keep; hud(); say('Stage ' + (stage + 1) + ': ' + STAGES[stage].name + '.'); }, reduce.matches ? 300 : 1400);
+      setTimeout(function () {
+        state = 'play'; var keep = score; setup(stage + 1); score = keep; hud();
+        say('Stage ' + (stage + 1) + ', ' + STAGES[stage].title + ': claim ' + Math.round(STAGES[stage].target * 100) + ' percent.');
+      }, reduce.matches ? 300 : 1600);
       return;
     }
     if (score > best) { best = score; try { localStorage.setItem('lf-mini-best', best); } catch (e) { /* storage off */ } }
@@ -475,7 +441,7 @@
     state = 'done'; root.classList.remove('playing'); track('mini_ask_shown', { score: score });
     card('<p class="eyebrow">' + FREE_STAGES + ' stages cleared · ' + score.toLocaleString() + ' points</p>' +
       '<h3>That was ' + FREE_STAGES + ' of 100.</h3>' +
-      '<div class="mini-next" style="--next:url(img/world-' + NEXT.world + '.webp)"><span>Next · Sector 4</span><b>' + NEXT.name + '</b></div>' +
+      '<div class="mini-next" style="--next:url(img/world-crystal-caverns.webp)"><span>Next world · Sector 2</span><b>Crystal Caverns</b></div>' +
       '<p>The full game has ten sectors of ten stages, a guardian fight at the end of each, the Light Core upgrades and Endless mode. One purchase covers iPhone, iPad and Apple TV.</p>' +
       '<div class="mini-actions">' + buy('web_demo_end', 'Get Lightfence') +
       '<button class="btn btn-ghost" type="button" data-act="replay">Play again</button></div>');
@@ -491,41 +457,43 @@
 
   function pause(on) {
     if (on && state === 'play') {
-      state = 'paused';
+      state = 'paused'; sound('select', 0.6);
       card('<h3>Paused</h3><div class="mini-actions"><button class="btn" type="button" data-act="resume">Resume</button></div>', 'button');
     }
   }
 
   function act(e) {
     var a = e.currentTarget.dataset.act;
+    if (a === 'sound') { toggleSound(); return; }
+    if (a === 'pause') { pause(true); return; }
     if (a === 'start' || a === 'replay') play(0);
     if (a === 'retry') { var keep = score; play(stage); score = keep; hud(); }
-    if (a === 'resume') { hideCard(); state = 'play'; canvas.focus({ preventScroll: true }); }
+    if (a === 'resume') { hideCard(); state = 'play'; ui.pause.hidden = false; sound('select', 0.6); canvas.focus({ preventScroll: true }); }
   }
   root.querySelectorAll('[data-act]').forEach(function (b) { b.addEventListener('click', act); });
   ui.card.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && (state === 'done' || state === 'over')) { hideCard(); state = 'demo'; setup(0); root.classList.remove('playing'); hud(); }
   });
 
-  // Returning players who finished the free stages see where they left off.
-  var done = false;
+  var done = false;                            // returning players who finished see their best
   try { done = localStorage.getItem('lf-mini-done') === '1'; } catch (e) { /* storage off */ }
 
   setup(0); resize();
   window.addEventListener('resize', resize);
   if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) { if (entries[0].isIntersecting) load(); }, { rootMargin: '800px 0px' }).observe(root);
     new IntersectionObserver(function (entries) {
       visible = entries[0].isIntersecting;
       if (!visible) { if (state === 'play') pause(true); stop(); } else start();
     }, { threshold: 0.15 }).observe(canvas);
-  }
+  } else load();
   document.addEventListener('visibilitychange', function () { if (document.hidden) { if (state === 'play') pause(true); stop(); } else start(); });
-  if (reduce.matches) { state = 'still'; draw(); }                          // a still board until Play
+  if (reduce.matches) state = 'still';                                     // a still board until Play
   if (done && best) root.querySelector('[data-mini="best"]').textContent = 'Your best: ' + best.toLocaleString();
-  start();
+  render(0); start();
   if (/[?&]minitest\b/.test(location.search))                          // for scripted tests only
     window.__mini = { get: function () { return { state: state, stage: stage, pct: pct, lives: lives, score: score,
                                                   x: player.x, y: player.y, drawing: player.drawing }; },
                       win: function () { pct = 1; win(); },
-                      calm: function () { snarl.x = GW - 6; snarl.y = 6; snarl.vx = snarl.vy = 0.001; STAGES[stage].snarl = 0.001; tracers = []; } };
+                      calm: function () { snarl.x = GW - 6; snarl.y = 6; snarl.frozen = true; tracers = []; } };
 })();

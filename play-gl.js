@@ -1,13 +1,12 @@
-// GPU finish for the mini board (play.js), used when the browser has WebGL2.
-// play.js draws the frame on a 2D canvas without glow; this uploads it and
-// adds what a GPU does well: a two-level neon bloom, a shockwave from each
-// claim, heat shimmer round the Snarl, and a vignette. Without WebGL2 (or
-// after a lost context) play.js keeps drawing with Canvas 2D shadows instead.
+// GPU finish for the mini board (play.js, play-draw.js), used when the browser
+// has WebGL2. play-draw.js draws the frame on a 2D canvas without glow, and
+// its neon again on a half-size glow canvas; this uploads both and adds what a
+// GPU does well: a two-level bloom of the neon (the painting never blooms), a
+// shockwave from each claim, heat shimmer round the Snarl, and a vignette.
+// Without WebGL2 (or after a lost context) play-draw.js uses Canvas 2D shadows.
 window.LightfenceGL = (function () {
   'use strict';
   var VS = '#version 300 es\nin vec2 p; out vec2 uv; void main(){ uv = p * 0.5 + 0.5; gl_Position = vec4(p, 0., 1.); }';
-  var BRIGHT = '#version 300 es\nprecision mediump float; in vec2 uv; out vec4 o; uniform sampler2D t;\n' +
-    'void main(){ vec3 c = texture(t, uv).rgb; float l = max(c.r, max(c.g, c.b)); o = vec4(c * smoothstep(.55, 1., l), 1.); }';
   var BLUR = '#version 300 es\nprecision mediump float; in vec2 uv; out vec4 o; uniform sampler2D t; uniform vec2 d;\n' +
     'void main(){ vec3 c = texture(t, uv).rgb * .227;\n' +
     ' c += (texture(t, uv + d * 1.385).rgb + texture(t, uv - d * 1.385).rgb) * .316;\n' +
@@ -21,10 +20,11 @@ window.LightfenceGL = (function () {
     '  vec2 ds = (q - snarl) * vec2(1., aspect); float h = exp(-dot(ds, ds) * 90.);\n' +
     '  q += vec2(sin(q.y * 90. + time * 7.), cos(q.x * 80. + time * 6.)) * .0025 * h;\n' +
     ' }\n' +
-    ' vec3 c = texture(scene, q).rgb + texture(b1, q).rgb * 1.1 + texture(b2, q).rgb * .9;\n' +
+    ' vec3 b = texture(b1, q).rgb * 1.0 + texture(b2, q).rgb * 0.9;\n' +
+    ' vec3 c = 1. - (1. - texture(scene, q).rgb) * (1. - min(b, 1.));\n' +
     ' if (motion > 0. && claim.z < 1.) c += vec3(.6, .9, 1.) * exp(-pow((length((uv - claim.xy) * vec2(1., aspect)) - claim.z * .9) * 40., 2.)) * (1. - claim.z) * .35;\n' +
-    ' vec2 v = uv - .5; c *= 1. - dot(v, v) * .55;\n' +
-    ' o = vec4(1. - exp(-c * 1.25), 1.); }';
+    ' vec2 v = uv - .5; c *= 1. - dot(v, v) * .35;\n' +
+    ' o = vec4(min(c, 1.), 1.); }';
 
   function create(canvas) {
     var gl = canvas.getContext('webgl2', { alpha: false, antialias: false, premultipliedAlpha: false, powerPreference: 'high-performance' });
@@ -57,11 +57,11 @@ window.LightfenceGL = (function () {
       fbo[name].w = w; fbo[name].h = h;
     }
     function init() {
-      progs.bright = program(BRIGHT); progs.blur = program(BLUR); progs.final = program(FINAL);
+      progs.blur = program(BLUR); progs.final = program(FINAL);
       var vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-      tex.scene = texture(0, 0);
+      tex.scene = texture(0, 0); tex.glow = texture(0, 0);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       size.w = 0;
     }
@@ -97,13 +97,16 @@ window.LightfenceGL = (function () {
     try { init(); } catch (e) { return null; }
 
     return {
-      // scene: the 2D canvas; fx: { claim: [x, y, 0..1 progress], snarl: [x, y], time, motion } in 0..1 board space, y up
-      render: function (scene, fx) {
+      // scene: the 2D canvas; glow: its neon at half size; fx: { claim: [x, y, 0..1 progress],
+      // snarl: [x, y], time, motion } in 0..1 canvas space, y up
+      render: function (scene, glow, fx) {
         if (lost) return false;
         resize(scene.width, scene.height);
         gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex.scene);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, scene);
-        pass(progs.bright, 'a1', { t: tex.scene }); blur('a1', 'b1');
+        gl.bindTexture(gl.TEXTURE_2D, tex.glow);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, glow);
+        pass(progs.blur, 'a1', { t: tex.glow }, { d: [0, 0] }); blur('a1', 'b1');
         pass(progs.blur, 'a2', { t: tex.a1 }, { d: [0, 0] }); blur('a2', 'b2'); blur('a2', 'b2');
         pass(progs.final, null, { scene: tex.scene, b1: tex.a1, b2: tex.a2 },
              { claim: fx.claim, snarl: fx.snarl, time: fx.time, motion: fx.motion, aspect: scene.height / scene.width });

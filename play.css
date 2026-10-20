@@ -1,30 +1,70 @@
-/* The playable mini board (play.js). Sits in the How it plays section. */
-.mini { --mini-accent: #33f2ff; padding: 14px; position: relative; }
-.mini-hud { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 12px; align-items: center; margin-bottom: 10px;
-  font: 600 0.72rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.mini-sector { color: var(--mini-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mini-lives { color: var(--mini-accent); letter-spacing: 0.2em; }
-.mini-score { color: var(--ink); font-variant-numeric: tabular-nums; }
-.mini-meter { grid-column: 1 / 3; height: 6px; border-radius: 99px; background: rgba(150, 160, 255, 0.14); overflow: hidden; }
-.mini-meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--mini-accent);
-  box-shadow: 0 0 12px var(--mini-accent); transition: width 0.25s ease; }
-.mini-pct { font-variant-numeric: tabular-nums; }
-.mini-stage { position: relative; border-radius: 12px; overflow: hidden;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mini-accent) 45%, transparent), 0 0 40px -12px var(--mini-accent); }
-.mini canvas { display: block; width: 100%; aspect-ratio: 4 / 5; background: #070414; outline: none; cursor: pointer; }
+/* The playable mini board (play.js, play-draw.js). Sits in the How it plays section.
+   The HUD copies the game's (GameHUD.swift): a dark beveled panel with SCORE, the
+   CLAIM ring and LIVES, then the sector title and the stage line. Sizes are in
+   game points: --pt is one point of the phone's 374 pt board at this width. */
+.mini { --mini-accent: #33f2ff; --lives: #2eebff; --claim: #0087ff; padding: 10px; position: relative; }
+.mini-stage { position: relative; border-radius: 12px; overflow: hidden; container-type: inline-size; --pt: 0.246cqw;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mini-accent) 35%, transparent), 0 0 40px -14px var(--mini-accent); }
+.mini canvas { display: block; width: 100%; aspect-ratio: 100 / 138; background: #04141a; outline: none; cursor: pointer; }
 .mini canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--mini-accent); }
 .mini.playing canvas { touch-action: none; cursor: none; }
 
+.mini-hud { position: absolute; inset: 0 0 auto; padding: calc(8 * var(--pt)) calc(10 * var(--pt)) 0; pointer-events: none;
+  text-align: center; color: #fff; }
+.mini-panel { display: grid; grid-template-columns: 1fr auto 1fr calc(30 * var(--pt)); align-items: center; gap: calc(6 * var(--pt));
+  height: calc(64 * var(--pt)); padding: 0 calc(12 * var(--pt)) 0 calc(16 * var(--pt)); border-radius: calc(14 * var(--pt));
+  background: rgba(9, 9, 10, 0.8); border: 1px solid rgba(51, 242, 255, 0.68);
+  box-shadow: 0 0 calc(5 * var(--pt)) rgba(51, 242, 255, 0.45), inset 0 0 calc(10 * var(--pt)) rgba(51, 242, 255, 0.08); }
+.mini-cap { display: block; font: 600 calc(11 * var(--pt))/1 var(--body); letter-spacing: 0.04em; text-transform: uppercase; color: var(--mini-accent); }
+.mini-score { text-align: left; display: grid; gap: calc(3 * var(--pt)); }
+.mini-score b { font: 600 calc(24 * var(--pt))/1 var(--mono); font-variant-numeric: tabular-nums; }
+.mini-bestline { font: 500 calc(9.5 * var(--pt))/1 var(--mono); text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.mini-gauge { position: relative; width: calc(58 * var(--pt)); height: calc(58 * var(--pt)); display: grid; place-content: center; }
+.mini-gauge svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.mini-gauge .g-base { fill: rgba(8, 8, 8, 0.55); stroke: rgba(255, 255, 255, 0.12); stroke-width: 6; }
+.mini-gauge .g-arc { fill: none; stroke: var(--claim); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 0 100;
+  filter: drop-shadow(0 0 2px var(--claim)); transition: stroke-dasharray 0.3s ease; }
+.mini-gauge .g-tick { fill: #fff; stroke: rgba(0, 0, 0, 0.6); stroke-width: 1; }
+.mini-gauge .g-dia { fill: var(--claim); stroke: #fff; stroke-width: 1.2; filter: drop-shadow(0 0 3px var(--claim)); }
+.mini-gauge .mini-cap { position: relative; color: rgba(255, 255, 255, 0.6); font-size: calc(8.5 * var(--pt)); margin-top: calc(4 * var(--pt)); }
+.mini-gauge b { position: relative; font: 600 calc(15 * var(--pt))/1.1 var(--mono); }
+.mini-lives { display: grid; justify-items: center; gap: calc(5 * var(--pt)); }
+.mini-lives .mini-cap { color: var(--lives); }
+.mini-pips { display: flex; gap: calc(3 * var(--pt)); }
+.mini-pips i { width: calc(19 * var(--pt)); height: calc(19 * var(--pt)); transition: opacity 0.3s;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M11 1C0 1 1 7 1 14C10 18 11 19 11 21C11 19 12 18 21 14C21 7 22 1 11 1Z' fill='%232eebff'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 0 2px var(--lives)); }
+.mini-pips i.lost { opacity: 0.16; filter: none; }
+.mini-title { margin: calc(11 * var(--pt)) 0 0; font: 600 calc(17 * var(--pt))/1 var(--mono); letter-spacing: 0.02em; text-transform: uppercase;
+  background: linear-gradient(to top, #7d63de 15%, #4cf0ff 85%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 4px rgba(76, 240, 255, 0.35)); }
+.mini-line { margin: calc(5 * var(--pt)) 0 0; font: 500 calc(10 * var(--pt))/1.2 var(--mono); letter-spacing: 0.02em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9); white-space: nowrap; text-shadow: 0 1px 3px #000; }
+.mini-pills { display: flex; justify-content: center; margin: calc(5 * var(--pt)) 0 0; }
+.mini-pills i { width: calc(11 * var(--pt)); height: calc(11 * var(--pt)); margin: 0 calc(-1 * var(--pt)); transform: rotate(45deg) scale(0.72);
+  border: calc(1.5 * var(--pt)) solid var(--mini-accent); }
+.mini-pills i.on { background: var(--mini-accent); box-shadow: 0 0 calc(6 * var(--pt)) var(--mini-accent); }
+
+.mini-tools { position: absolute; top: calc(12 * var(--pt)); right: calc(15 * var(--pt)); display: grid; gap: calc(4 * var(--pt)); }
+.mini-tool { display: grid; place-items: center; width: max(26px, calc(27 * var(--pt))); height: max(26px, calc(27 * var(--pt))); padding: 0;
+  border-radius: calc(6 * var(--pt)); border: 1px solid rgba(140, 150, 255, 0.55); background: #0c0a2c; color: rgba(255, 255, 255, 0.85); cursor: pointer; }
+.mini-tool[hidden] { display: none; }
+.mini-tool:hover { color: #fff; border-color: var(--mini-accent); }
+.mini-tool:focus-visible { outline: 2px solid var(--mini-accent); outline-offset: 2px; }
+.mini-tool svg { width: 70%; height: 70%; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.mini-tool .spk { fill: currentColor; stroke-width: 1.4; }
+.mini-tool[aria-pressed="true"] .off, .mini-tool[aria-pressed="false"] .on { display: none; }
+
 .mini-start { position: absolute; inset: auto 0 0; padding: 48px 18px 18px; text-align: center;
-  background: linear-gradient(transparent, rgba(6, 3, 15, 0.92) 45%); }
+  background: linear-gradient(transparent, rgba(4, 10, 16, 0.92) 45%); }
 .mini-start .eyebrow { margin-bottom: 12px; color: var(--mini-accent); }
 .mini.playing .mini-start, .mini.carded .mini-start { display: none; }
-.mini-help { color: var(--faint); font-size: 0.85rem; margin-top: 10px; }
+.mini-help { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
 .mini-best { color: var(--muted); font: 600 0.75rem/1 var(--mono); margin-top: 8px; }
 .mini-best:empty { display: none; }
 
 .mini-card { position: absolute; inset: 0; display: grid; align-content: center; gap: 14px; padding: 26px; text-align: center;
-  background: rgba(6, 3, 15, 0.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: mini-in 0.35s ease both; }
+  background: rgba(4, 8, 16, 0.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: mini-in 0.35s ease both; }
 .mini-card[hidden] { display: none; }
 .mini-card h3 { font-size: clamp(1.4rem, 3vw, 1.8rem); outline: none; }
 .mini-card p { color: var(--muted); font-size: 0.95rem; margin: 0; }
@@ -39,4 +79,4 @@
 @keyframes mini-in { from { opacity: 0; transform: scale(0.98); } }
 
 @media (max-width: 860px) { .board.mini { max-width: 440px; } }
-@media (prefers-reduced-motion: reduce) { .mini-card { animation: none; } .mini-meter i { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .mini-card { animation: none; } .mini-gauge .g-arc, .mini-pips i { transition: none; } }

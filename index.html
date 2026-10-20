@@ -44,6 +44,8 @@
   <script>document.documentElement.classList.add('js')</script>
   <script src="lightfence.js" defer></script>
   <script src="play-gl.js" defer></script>
+  <script src="play-draw.js" defer></script>
+  <script src="play-hud.js" defer></script>
   <script src="play.js" defer></script>
 </head>
 <body>
@@ -119,19 +121,29 @@
       </ol>
     </div>
     <div class="board mini" id="mini">
-      <div class="mini-hud" aria-hidden="true">
-        <span class="mini-sector" data-mini="sector">Demo &middot; Aqua Reef</span>
-        <span class="mini-lives" data-mini="lives"></span>
-        <span class="mini-score" data-mini="score"></span>
-        <span class="mini-meter"><i data-mini="bar"></i></span>
-        <span class="mini-pct" data-mini="pct"></span>
-      </div>
       <div class="mini-stage">
-        <canvas tabindex="0" width="400" height="500" aria-label="Lightfence mini board. Arrow keys or WASD steer; the marker keeps going until you turn. Escape pauses."></canvas>
+        <canvas tabindex="0" width="360" height="497" aria-label="Lightfence mini board, Aqua Reef. Arrow keys or WASD steer; the marker keeps going until you turn. Swipe or tap on a touch screen. Escape pauses, M mutes."></canvas>
+        <div class="mini-hud" aria-hidden="true">
+          <div class="mini-panel">
+            <div class="mini-score"><span class="mini-cap">Score</span><b data-mini="score">0</b><span class="mini-bestline" data-mini="bestline">Best 0</span></div>
+            <div class="mini-gauge">
+              <svg viewBox="0 0 84 84"><circle class="g-base" cx="42" cy="42" r="34" /><circle class="g-arc" data-mini="arc" cx="42" cy="42" r="34" pathLength="100" transform="rotate(-90 42 42)" /><path class="g-tick" data-mini="tick" d="M42 5 l3.5 3.5 -3.5 3.5 -3.5 -3.5z" /><path class="g-dia" d="M42 0 l6 7.5 -6 7.5 -6 -7.5z" /></svg>
+              <span class="mini-cap">Claim</span><b data-mini="pct">0%</b>
+            </div>
+            <div class="mini-lives"><span class="mini-cap">Lives</span><span class="mini-pips" data-mini="lives"><i></i><i></i><i></i></span></div>
+          </div>
+          <p class="mini-title">Sector 1 &mdash; Aqua Reef</p>
+          <p class="mini-line" data-mini="line">Stage 1/3 &middot; Reef Twin Gates &middot; 60%</p>
+          <p class="mini-pills" data-mini="pills"><i class="on"></i><i></i><i></i></p>
+        </div>
+        <div class="mini-tools">
+          <button class="mini-tool" type="button" data-act="pause" aria-label="Pause" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg></button>
+          <button class="mini-tool" type="button" data-act="sound" aria-pressed="true" aria-label="Sound on (M to mute)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /><path class="off" d="M16 9.5l5 5M21 9.5l-5 5" /></svg></button>
+        </div>
         <div class="mini-start">
           <p class="eyebrow">Free demo &middot; 3 stages</p>
           <button class="btn" type="button" data-act="start">Play it here</button>
-          <p class="mini-help">Arrow keys or WASD. On a phone, swipe or tap to steer.</p>
+          <p class="mini-help">Arrow keys or WASD. On a phone, swipe or tap to steer. Sound plays once you start; M mutes.</p>
           <p class="mini-best" data-mini="best"></p>
         </div>
         <div class="mini-card" role="dialog" aria-label="Lightfence demo" hidden></div>
