@@ -264,6 +264,10 @@ kbd.xa { color: #5ee05a; border-color: #5ee05a; } kbd.xb { color: #ff5c5c; borde
 .get h2 { max-width: 18ch; }
 .get .sub { margin-inline: auto; }
 .placeholder { margin-top: 30px; }
+.store-badge { margin-top: 30px; }
+.store-badge a { display: inline-block; border-radius: 10px; transition: transform 0.15s ease; }
+.store-badge a:hover, .store-badge a:focus-visible { transform: translateY(-2px); }
+.store-badge img { display: block; height: 60px; width: auto; }
 .contact { margin-top: 26px; color: var(--muted); font-size: 0.95rem; }
 
 /* Footer */
